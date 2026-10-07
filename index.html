@@ -1,19 +1,845 @@
 <!doctype html>
-<html lang="es">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Actividad Económica | AtencionDigital</title>
-  <style>
-    :root{font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#152238;background:#f4f7fb}body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px;box-sizing:border-box}main{max-width:680px;background:white;padding:36px;border-radius:18px;box-shadow:0 8px 32px #20305016}h1{margin:0 0 10px;font-size:2rem}p{line-height:1.65}.tag{color:#245c9c;font-weight:700;font-size:.9rem}.note{background:#eef4fc;padding:15px 18px;border-radius:10px;font-size:.95rem}
-  </style>
-</head>
-<body>
-  <main>
-    <p class="tag">AtencionDigital · Cobranzas</p>
-    <h1>Formulario de Actividad Económica</h1>
-    <p>Espacio de publicación del formulario de Actividad Económica.</p>
-    <p class="note">Página inicial de prueba. El formulario operativo y su conexión segura a la API se incorporarán después de validar su código y dependencias. Esta página no captura ni envía datos.</p>
-  </main>
-</body>
-</html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Actividad Económica | AtencionDigital</title><style>
+:root{--carsa-red:#e30613;--carsa-red-dark:#b8000b;--carsa-red-deep:#87000a;--carsa-red-soft:#ffe6e8;--carsa-red-softer:#fff5f5;--carsa-ease:ease}*{box-sizing:border-box}body{margin:0;padding:28px 16px;background:#f8f7f8;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#2a2425}input,select,textarea,button{font:inherit}.atd-kicker{color:#b8000b;font-size:.82rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em}.atd-page-title{font-size:1.7rem;margin:.4rem 0}.atd-muted{color:#75696a}.mb-1{margin-bottom:.25rem}.mb-0{margin-bottom:0}.preview-banner{max-width:1100px;margin:0 auto 18px;padding:14px 18px;border:1px solid #f1c6cb;background:#fff4f4;border-radius:12px;font-size:.92rem}
+
+    .eval-page {
+        --eval-red: var(--carsa-red);
+        --eval-red-dark: var(--carsa-red-dark);
+        --eval-red-deep: var(--carsa-red-deep);
+        --eval-red-soft: var(--carsa-red-soft);
+        --eval-red-softer: var(--carsa-red-softer);
+        --eval-border: #efc4c8;
+        --eval-line: #eee2e3;
+        --eval-ink: #2a2425;
+        --eval-muted: #75696a;
+        --eval-shadow: 0 18px 50px rgba(45, 22, 24, .08);
+    }
+
+    .eval-header {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 16px;
+        margin: 0 auto 20px;
+        max-width: 1100px;
+        padding: 18px 20px;
+        border: 1px solid #f0d8da;
+        border-radius: 16px;
+        background:
+            linear-gradient(135deg, rgba(227,6,19,.055), transparent 38%),
+            #fff;
+        box-shadow: 0 10px 30px rgba(43,22,24,.045);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .eval-header::after {
+        content: "";
+        position: absolute;
+        right: -52px;
+        top: -72px;
+        width: 180px;
+        height: 180px;
+        border-radius: 50%;
+        background: rgba(227,6,19,.055);
+        pointer-events: none;
+    }
+
+    .eval-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 22px;
+        align-items: start;
+        max-width: 1100px;
+        margin: 0 auto;
+    }
+
+    .eval-panel {
+        width: 100%;
+        background: linear-gradient(180deg, #fff 0%, #fffdfd 100%);
+        border: 1px solid #eee5e6;
+        border-radius: 18px;
+        padding: 18px;
+        box-shadow: var(--eval-shadow);
+        overflow: hidden;
+    }
+
+    .eval-section {
+        margin-bottom: 20px;
+        animation: evalSectionIn .42s var(--carsa-ease) both;
+    }
+
+    .eval-section:last-child {
+        margin-bottom: 0;
+    }
+
+    .eval-section-title {
+        margin: 0 0 10px;
+        padding: 10px 14px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, var(--eval-red) 0%, var(--eval-red-dark) 100%);
+        color: #fff;
+        font-size: 1rem;
+        font-weight: 850;
+        letter-spacing: .01em;
+        text-align: center;
+        box-shadow: 0 8px 18px rgba(227,6,19,.16);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .eval-section-title::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(110deg, transparent 0 42%, rgba(255,255,255,.14) 50%, transparent 58% 100%);
+        transform: translateX(-120%);
+        transition: transform .6s var(--carsa-ease);
+        pointer-events: none;
+    }
+
+    .eval-section:hover .eval-section-title::after {
+        transform: translateX(120%);
+    }
+
+    .eval-row {
+        display: grid;
+        grid-template-columns: 42% 58%;
+        border: 1px solid var(--eval-border);
+        border-bottom: 0;
+        min-height: 40px;
+        background: #fff;
+        transition: background .16s ease, box-shadow .16s ease, transform .16s ease;
+    }
+
+    .eval-row:last-child {
+        border-bottom: 1px solid var(--eval-border);
+    }
+
+    .eval-row:hover {
+        background: var(--eval-red-softer);
+        box-shadow: inset 4px 0 0 rgba(227,6,19,.18);
+    }
+
+    .eval-label {
+        display: flex;
+        align-items: center;
+        padding: 8px 11px;
+        background: linear-gradient(90deg, #fff3f4 0%, #fff8f8 100%);
+        color: var(--eval-red-dark);
+        font-weight: 800;
+        border-right: 1px solid var(--eval-border);
+    }
+
+    .eval-field {
+        min-width: 0;
+        background: #fff;
+    }
+
+    .eval-field input,
+    .eval-field select,
+    .eval-field textarea {
+        width: 100%;
+        min-height: 38px;
+        border: 0;
+        outline: 0;
+        padding: 8px 11px;
+        background: transparent;
+        color: var(--eval-ink);
+        transition: background .16s ease, box-shadow .16s ease;
+    }
+
+    .eval-field input:focus,
+    .eval-field select:focus,
+    .eval-field textarea:focus {
+        background: #fffafa;
+        box-shadow: inset 0 0 0 2px rgba(227,6,19,.18);
+    }
+
+    .eval-field textarea {
+        min-height: 150px;
+        resize: vertical;
+        border: 1px solid var(--eval-border);
+        border-radius: 10px;
+        background: #fff;
+    }
+
+    .eval-money {
+        display: grid;
+        grid-template-columns: 44px 1fr;
+        align-items: stretch;
+    }
+
+    .eval-currency {
+        display: grid;
+        place-items: center;
+        background: #fff1f2;
+        color: var(--eval-red-dark);
+        font-weight: 900;
+        border-right: 1px solid var(--eval-border);
+    }
+
+    .eval-subtotal {
+        background: linear-gradient(90deg, #ffe2e4 0%, #fff0f1 100%) !important;
+        color: var(--eval-red-deep);
+        font-weight: 900;
+    }
+
+    .eval-total-emphasis {
+        background: #fff4f5 !important;
+        color: var(--eval-red-deep) !important;
+        font-weight: 900;
+        font-size: 1.06rem;
+    }
+
+    .eval-products {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        table-layout: fixed;
+        overflow: hidden;
+        border: 1px solid var(--eval-border);
+        border-radius: 10px;
+    }
+
+    .eval-products th,
+    .eval-products td {
+        border-right: 1px solid var(--eval-border);
+        border-bottom: 1px solid var(--eval-border);
+        padding: 0;
+    }
+
+    .eval-products th:last-child,
+    .eval-products td:last-child {
+        border-right: 0;
+    }
+
+    .eval-products tbody tr:last-child td {
+        border-bottom: 0;
+    }
+
+    .eval-products th {
+        padding: 9px 6px;
+        background: linear-gradient(135deg, #f8d4d7 0%, #ffe9ea 100%);
+        color: var(--eval-red-dark);
+        text-align: center;
+        font-weight: 900;
+    }
+
+    .eval-products tbody tr {
+        transition: background .16s ease;
+    }
+
+    .eval-products tbody tr:hover {
+        background: #fff7f8;
+    }
+
+    .eval-products input {
+        width: 100%;
+        border: 0;
+        outline: 0;
+        padding: 9px 7px;
+        text-align: center;
+        background: transparent;
+        color: var(--eval-ink);
+    }
+
+    .eval-products input:focus {
+        background: #fffafa;
+        box-shadow: inset 0 0 0 2px rgba(227,6,19,.16);
+    }
+
+    .eval-products .product-name {
+        text-align: left;
+    }
+
+    .eval-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 18px;
+        padding-top: 16px;
+        border-top: 1px solid var(--eval-line);
+    }
+
+    .eval-btn {
+        min-height: 42px;
+        border: 0;
+        border-radius: 10px;
+        padding: 9px 16px;
+        font-weight: 850;
+        cursor: pointer;
+        transition: transform .18s var(--carsa-ease), box-shadow .18s ease, background .18s ease, color .18s ease;
+    }
+
+    .eval-btn:hover {
+        transform: translateY(-2px);
+    }
+
+    .eval-btn-primary {
+        background: linear-gradient(135deg, var(--eval-red) 0%, var(--eval-red-dark) 100%);
+        color: #fff;
+        box-shadow: 0 10px 22px rgba(227,6,19,.2);
+    }
+
+    .eval-btn-primary:hover {
+        box-shadow: 0 14px 28px rgba(227,6,19,.28);
+    }
+
+    .eval-btn-secondary {
+        background: #f3f3f3;
+        color: #4d4546;
+        border: 1px solid #dedede;
+    }
+
+    .eval-btn-secondary:hover {
+        background: #fff5f6;
+        color: var(--eval-red-dark);
+        border-color: #efbfc3;
+    }
+
+    .eval-note {
+        margin-top: 10px;
+        color: var(--eval-muted);
+        font-size: .8rem;
+    }
+
+
+    .eval-tabs {
+        display: flex;
+        gap: 8px;
+        max-width: 1100px;
+        margin: 0 auto 14px;
+        padding: 6px;
+        background: #fff;
+        border: 1px solid #eee5e6;
+        border-radius: 12px;
+        box-shadow: 0 8px 24px rgba(43,22,24,.04);
+    }
+    .eval-tab {
+        border: 0;
+        border-radius: 9px;
+        padding: 10px 18px;
+        background: transparent;
+        color: var(--eval-muted);
+        font-weight: 850;
+        cursor: pointer;
+    }
+    .eval-tab.active {
+        background: linear-gradient(135deg, var(--eval-red), var(--eval-red-dark));
+        color: #fff;
+        box-shadow: 0 8px 18px rgba(227,6,19,.18);
+    }
+    .eval-tab-radio { position: absolute; opacity: 0; pointer-events: none; }
+    .eval-tab-content { display: none; }
+    #evalVistaEvaluacion:checked ~ .eval-tabs + #tabEvaluacion { display: block; }
+    #evalVistaRegistro:checked ~ .eval-tabs + #tabEvaluacion + #tabRegistro { display: block; }
+    #evalVistaRegistro:checked ~ #tabRegistro {
+        width: 100%;
+        max-width: none;
+        margin-left: 50%;
+        transform: translateX(-50%);
+    }
+    #evalVistaRegistro:checked ~ #tabRegistro .eval-grid {
+        max-width: none;
+        width: 100%;
+    }
+    #evalVistaRegistro:checked ~ #tabRegistro .eval-panel {
+        width: 100%;
+        max-width: none;
+    }
+    #evalVistaRegistro:checked ~ #tabRegistro .eval-registro {
+        min-width: 1700px;
+    }
+    #evalVistaEvaluacion:checked ~ .eval-tabs label[for="evalVistaEvaluacion"],
+    #evalVistaRegistro:checked ~ .eval-tabs label[for="evalVistaRegistro"] {
+        background: linear-gradient(135deg, var(--eval-red), var(--eval-red-dark));
+        color: #fff;
+        box-shadow: 0 8px 18px rgba(227,6,19,.18);
+    }
+    .eval-registro-wrap {
+        overflow-x: auto;
+        position: relative;
+        isolation: isolate;
+    }
+    .eval-registro {
+        width: 100%;
+        min-width: 980px;
+        border-collapse: separate;
+        border-spacing: 0;
+        border: 1px solid var(--eval-border);
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    .eval-registro th, .eval-registro td {
+        padding: 9px 8px;
+        border-right: 1px solid var(--eval-border);
+        border-bottom: 1px solid var(--eval-border);
+        text-align: left;
+        white-space: nowrap;
+    }
+    .eval-registro th:last-child, .eval-registro td:last-child { border-right: 0; }
+    .eval-registro tbody tr:last-child td { border-bottom: 0; }
+    .eval-registro thead tr:first-child th {
+        background: linear-gradient(135deg, #f8d4d7 0%, #ffe9ea 100%);
+        color: var(--eval-red-dark);
+        font-weight: 900;
+    }
+    .eval-registro .filter-row th {
+        background: #fff8f8;
+        padding: 6px;
+    }
+    .eval-registro .filter-row input, .eval-registro .filter-row select {
+        width: 100%;
+        min-width: 80px;
+        border: 1px solid #efd0d3;
+        border-radius: 7px;
+        padding: 6px 7px;
+        outline: 0;
+        background: #fff;
+    }
+    .eval-registro .filter-row input:focus, .eval-registro .filter-row select:focus {
+        border-color: var(--eval-red);
+        box-shadow: 0 0 0 2px rgba(227,6,19,.08);
+    }
+    .eval-registro tbody td { background: #fafafa; color: #5f5657; }
+    .eval-registro tbody tr:hover td { background: #fafafa; }
+    .eval-action-head,
+    .eval-action-cell {
+        position: sticky !important;
+        right: 0;
+        z-index: 20;
+        text-align: center !important;
+        min-width: 74px;
+        width: 74px;
+        box-shadow: -5px 0 10px rgba(43,22,24,.08);
+    }
+    .eval-action-head {
+        background: linear-gradient(135deg, #f8d4d7 0%, #ffe9ea 100%) !important;
+        color: var(--eval-red-dark) !important;
+        z-index: 30;
+    }
+    .eval-registro .filter-row th:last-child {
+        position: sticky !important;
+        right: 0;
+        z-index: 29;
+        background: #fff8f8 !important;
+        box-shadow: -5px 0 10px rgba(43,22,24,.08);
+    }
+    .eval-action-cell { background: #fff !important; }
+    .eval-edit-btn {
+        width: 36px;
+        height: 34px;
+        border: 1px solid #e5c7ca;
+        border-radius: 8px;
+        background: #fff;
+        color: var(--eval-red-dark);
+        font-size: 20px;
+        font-weight: 900;
+        line-height: 1;
+        cursor: pointer;
+    }
+    .eval-edit-btn:hover { border-color: var(--eval-red); box-shadow: 0 4px 12px rgba(227,6,19,.12); }
+    .eval-row-editing td:not(.eval-action-cell) { background: #fffdf2 !important; }
+    .eval-cell-editor {
+        width: 100%;
+        min-width: 110px;
+        border: 1px solid #e5aeb3;
+        border-radius: 6px;
+        padding: 6px 7px;
+        background: #fff;
+        color: #332b2c;
+        outline: 0;
+    }
+    .eval-cell-editor:focus { border-color: var(--eval-red); box-shadow: 0 0 0 2px rgba(227,6,19,.10); }
+    .eval-cell-locked { background: #f1f1f1 !important; color: #8a8081 !important; }
+    .eval-calculated,
+    #productosBody [data-field="total"] {
+        background: #f1f1f1 !important;
+        color: #5f5657 !important;
+        cursor: not-allowed;
+        font-weight: 800;
+    }
+    .eval-empty {
+        text-align: center !important;
+        padding: 26px !important;
+        color: var(--eval-muted);
+    }
+
+    @keyframes evalSectionIn {
+        from { opacity: 0; transform: translateY(8px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .eval-section,
+        .eval-section-title::after,
+        .eval-row,
+        .eval-btn {
+            animation: none !important;
+            transition: none !important;
+        }
+    }
+
+    @media (max-width: 640px) {
+        .eval-header {
+            padding: 15px;
+        }
+
+        .eval-panel {
+            padding: 12px;
+        }
+
+        .eval-row {
+            grid-template-columns: 1fr;
+        }
+
+        .eval-label {
+            border-right: 0;
+            border-bottom: 1px solid var(--eval-border);
+        }
+
+        .eval-products {
+            font-size: .8rem;
+        }
+
+        .eval-actions {
+            flex-direction: column-reverse;
+        }
+
+        .eval-btn {
+            width: 100%;
+        }
+    }
+
+</style></head><body><aside class="preview-banner"><strong>Copia independiente del formulario original.</strong> Los cálculos funcionan localmente. Guardar y consultar registros estarán disponibles cuando se conecte una API autenticada. No introduzcas datos reales durante esta prueba.</aside>
+<div class="eval-page">
+    <div class="eval-header">
+        <div>
+            <div class="atd-kicker">Cobranzas · Formularios</div>
+            <h1 class="atd-page-title mb-1">Evaluación económica del cliente</h1>
+            <p class="atd-muted mb-0">
+                Registro de datos del ejecutivo, cliente, ingresos, gastos y evaluación de actividad económica.
+            </p>
+        </div>
+    </div>
+
+
+    <input type="radio" name="evalVista" id="evalVistaEvaluacion" class="eval-tab-radio" checked />
+    <input type="radio" name="evalVista" id="evalVistaRegistro" class="eval-tab-radio" />
+    <div class="eval-tabs" role="tablist" aria-label="Evaluación económica">
+        <label class="eval-tab" for="evalVistaEvaluacion">EVALUACIÓN</label>
+        <label class="eval-tab" for="evalVistaRegistro">REGISTRO</label>
+    </div>
+
+    <div id="tabEvaluacion" class="eval-tab-content active">
+
+    <form id="evaluacionEconomicaForm" autocomplete="off">
+        
+        <div class="eval-grid">
+
+            <div class="eval-panel">
+                <section class="eval-section">
+                    <h2 class="eval-section-title">Datos del Ejecutivo</h2>
+
+                    <div class="eval-row">
+                        <div class="eval-label">DNI</div>
+                        <div class="eval-field"><input name="dniEjecutivo" maxlength="8" inputmode="numeric" /></div>
+                    </div>
+                    <div class="eval-row">
+                        <div class="eval-label">Nombre</div>
+                        <div class="eval-field"><input name="nombreEjecutivo" /></div>
+                    </div>
+                    <div class="eval-row">
+                        <div class="eval-label">Región</div>
+                        <div class="eval-field"><input name="regionEjecutivo" /></div>
+                    </div>
+                    <div class="eval-row">
+                        <div class="eval-label">Nombre de supervisor</div>
+                        <div class="eval-field"><input name="supervisor" /></div>
+                    </div>
+                </section>
+
+                <section class="eval-section">
+                    <h2 class="eval-section-title">Información del cliente</h2>
+
+                    <div class="eval-row">
+                        <div class="eval-label">Nro. Documento</div>
+                        <div class="eval-field"><input name="nroDocumento" /></div>
+                    </div>
+                    <div class="eval-row">
+                        <div class="eval-label">Nombre Cliente</div>
+                        <div class="eval-field"><input name="nombreCliente" /></div>
+                    </div>
+                    <div class="eval-row">
+                        <div class="eval-label">Dirección</div>
+                        <div class="eval-field"><input name="direccion" /></div>
+                    </div>
+                    <div class="eval-row">
+                        <div class="eval-label">Casado</div>
+                        <div class="eval-field">
+                            <select name="casado">
+                                <option value="">Seleccione</option>
+                                <option value="SI">Sí</option>
+                                <option value="NO">No</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="eval-row">
+                        <div class="eval-label">Teléfono</div>
+                        <div class="eval-field"><input name="telefono" inputmode="tel" /></div>
+                    </div>
+                    <div class="eval-row">
+                        <div class="eval-label">Personas a cargo</div>
+                        <div class="eval-field"><input name="personasCargo" type="number" min="0" value="0" /></div>
+                    </div>
+                    <div class="eval-row">
+                        <div class="eval-label">Tipo trabajo</div>
+                        <div class="eval-field">
+                            <select name="tipoTrabajo" id="tipoTrabajo">
+                                <option value="">Seleccione</option>
+                                <option value="DEPENDIENTE">Dependiente</option>
+                                <option value="INDEPENDIENTE">Independiente</option>
+                                <option value="NEGOCIO">Negocio</option>
+                                <option value="OTRO">Otro</option>
+                            </select>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="eval-section">
+                    <h2 class="eval-section-title">Ingresos Familiares (demostrables)</h2>
+
+                    <div class="eval-row">
+                        <div class="eval-label">Pensiones</div>
+                        <div class="eval-field eval-money">
+                            <span class="eval-currency">S/</span>
+                            <input class="js-ingreso" name="pensiones" type="number" min="0" step="0.01" />
+                        </div>
+                    </div>
+                    <div class="eval-row">
+                        <div class="eval-label">Rentas (Alquileres)</div>
+                        <div class="eval-field eval-money">
+                            <span class="eval-currency">S/</span>
+                            <input class="js-ingreso" name="rentas" type="number" min="0" step="0.01" />
+                        </div>
+                    </div>
+                    <div class="eval-row">
+                        <div class="eval-label">Otros Ingresos</div>
+                        <div class="eval-field eval-money">
+                            <span class="eval-currency">S/</span>
+                            <input class="js-ingreso" name="otrosIngresos" type="number" min="0" step="0.01" />
+                        </div>
+                    </div>
+                    <div class="eval-row eval-subtotal">
+                        <div class="eval-label eval-subtotal">Sub Total (1)</div>
+                        <div class="eval-field eval-money eval-subtotal">
+                            <span class="eval-currency">S/</span>
+                            <input id="subtotalIngresos" class="eval-subtotal eval-calculated" readonly tabindex="-1" />
+                        </div>
+                    </div>
+                </section>
+
+                <section class="eval-section">
+                    <h2 class="eval-section-title">Gastos Familiares</h2>
+
+                    @foreach (var item in new[] {
+                        ("viviendaAlquiler", "Vivienda / Alquiler"),
+                        ("alimentacion", "Alimentación"),
+                        ("educacion", "Educación"),
+                        ("transporte", "Transporte"),
+                        ("salud", "Salud"),
+                        ("serviciosPublicos", "Servicios Públicos"),
+                        ("recreacion", "Recreación"),
+                        ("otrosGastos", "Otros Gastos")
+                    })
+                    {
+                        <div class="eval-row">
+                            <div class="eval-label">@item.Item2</div>
+                            <div class="eval-field eval-money">
+                                <span class="eval-currency">S/</span>
+                                <input class="js-gasto" name="@item.Item1" type="number" min="0" step="0.01" />
+                            </div>
+                        </div>
+                    }
+
+                    <div class="eval-row eval-subtotal">
+                        <div class="eval-label eval-subtotal">Sub Total (2)</div>
+                        <div class="eval-field eval-money eval-subtotal">
+                            <span class="eval-currency">S/</span>
+                            <input id="subtotalGastos" class="eval-subtotal eval-calculated" readonly tabindex="-1" />
+                        </div>
+                    </div>
+                </section>
+
+                <section class="eval-section">
+                    <h2 class="eval-section-title">Evaluación del Oficio</h2>
+
+                    <div class="eval-row">
+                        <div class="eval-label">Oficio</div>
+                        <div class="eval-field"><input name="oficio" /></div>
+                    </div>
+                    <div class="eval-row">
+                        <div class="eval-label">Ingresos Estados de Cuenta</div>
+                        <div class="eval-field eval-money">
+                            <span class="eval-currency">S/</span>
+                            <input name="ingresoEstadoCuenta" type="number" min="0" step="0.01" />
+                        </div>
+                    </div>
+                    <div class="eval-row">
+                        <div class="eval-label">Ingresos total del Oficio</div>
+                        <div class="eval-field eval-money">
+                            <span class="eval-currency">S/</span>
+                            <input name="ingresoTotalOficio" type="number" min="0" step="0.01" />
+                        </div>
+                    </div>
+                </section>
+
+                <section class="eval-section">
+                    <h2 class="eval-section-title">Evaluación del Negocio</h2>
+
+                    <div class="eval-row">
+                        <div class="eval-label">Rubro del Negocio</div>
+                        <div class="eval-field"><input name="rubroNegocio" /></div>
+                    </div>
+
+                    <div class="mt-3">
+                        <table class="eval-products">
+                            <thead>
+                                <tr>
+                                    <th style="width:34%">Productos</th>
+                                    <th style="width:16%">Costo</th>
+                                    <th style="width:16%">Venta</th>
+                                    <th style="width:14%">Cantidad</th>
+                                    <th style="width:20%">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody id="productosBody">
+                                @for (var i = 0; i < 5; i++)
+                                {
+                                    <tr>
+                                        <td><input class="product-name" data-field="producto" /></td>
+                                        <td><input data-field="costo" type="number" min="0" step="0.01" /></td>
+                                        <td><input data-field="venta" type="number" min="0" step="0.01" /></td>
+                                        <td><input data-field="cantidad" type="number" min="0" step="1" /></td>
+                                        <td><input data-field="total" readonly /></td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="eval-row mt-3">
+                        <div class="eval-label">Total</div>
+                        <div class="eval-field eval-money">
+                            <span class="eval-currency">S/</span>
+                            <input id="totalProductos" class="eval-calculated" readonly tabindex="-1" />
+                        </div>
+                    </div>
+
+                    <div class="eval-row mt-3">
+                        <div class="eval-label">Ingresos total del Negocio</div>
+                        <div class="eval-field eval-money">
+                            <span class="eval-currency">S/</span>
+                            <input id="ingresoTotalNegocio" name="ingresoTotalNegocio" class="eval-total-emphasis eval-calculated" type="number" step="0.01" readonly tabindex="-1" />
+                        </div>
+                    </div>
+                </section>
+
+                <section class="eval-section">
+                    <h2 class="eval-section-title">Observaciones</h2>
+                    <div class="eval-field">
+                        <textarea name="observaciones" placeholder="Ingrese observaciones relevantes de la evaluación..."></textarea>
+                    </div>
+                </section>
+
+                <div class="eval-actions">
+                    <button type="reset" class="eval-btn eval-btn-secondary">Limpiar</button>
+                    <button type="submit" class="eval-btn eval-btn-primary" id="btnGuardarEvaluacion" disabled title="La API de registro aún no está conectada">Guardar evaluación</button>
+                </div>
+
+                <div class="eval-note">
+                    Formulario interno conectado a la persistencia controlada de AtencionDigital.
+                </div>
+            </div>
+        </div>
+    </form>
+
+    </div>
+
+    
+<div id="tabRegistro" class="eval-tab-content"><div class="eval-grid"><div class="eval-panel"><section class="eval-section"><h2 class="eval-section-title">REGISTRO</h2><p>La consulta y edición de registros requieren conexión segura con la API. No se muestran datos del servidor en esta copia.</p></section></div></div></div>
+</div>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    var form = document.getElementById("evaluacionEconomicaForm");
+    var boton = document.getElementById("btnGuardarEvaluacion");
+    if (!form || !boton) return;
+
+    function n(v) {
+        var x = Number(v);
+        return isFinite(x) ? x : 0;
+    }
+
+    function val(name) {
+        var el = form.elements[name];
+        return el ? el.value : "";
+    }
+
+    function recalcularFamilia() {
+        var ingresos = 0, gastos = 0;
+        document.querySelectorAll(".js-ingreso").forEach(function (x) { ingresos += n(x.value); });
+        document.querySelectorAll(".js-gasto").forEach(function (x) { gastos += n(x.value); });
+        var a = document.getElementById("subtotalIngresos");
+        var b = document.getElementById("subtotalGastos");
+        if (a) a.value = ingresos.toFixed(2);
+        if (b) b.value = gastos.toFixed(2);
+        recalcularIngresoTotalNegocio();
+    }
+
+    function recalcularIngresoTotalNegocio() {
+        var subtotal1 = 0;
+        var subtotal2 = 0;
+        document.querySelectorAll(".js-ingreso").forEach(function (x) { subtotal1 += n(x.value); });
+        document.querySelectorAll(".js-gasto").forEach(function (x) { subtotal2 += n(x.value); });
+
+        var estadoCuenta = form.elements["ingresoEstadoCuenta"];
+        var totalOficio = form.elements["ingresoTotalOficio"];
+        var totalNegocio = form.elements["ingresoTotalNegocio"];
+
+        var resultado = (subtotal1 + n(estadoCuenta && estadoCuenta.value) + n(totalOficio && totalOficio.value)) - subtotal2;
+        if (totalNegocio) totalNegocio.value = resultado.toFixed(2);
+    }
+
+    function recalcularProductos() {
+        var totalGeneral = 0;
+        document.querySelectorAll("#productosBody tr").forEach(function (fila) {
+            var venta = fila.querySelector('[data-field="venta"]');
+            var cantidad = fila.querySelector('[data-field="cantidad"]');
+            var total = fila.querySelector('[data-field="total"]');
+            var costo = fila.querySelector('[data-field="costo"]');
+            var importe = (n(venta && venta.value) - n(costo && costo.value)) * n(cantidad && cantidad.value);
+            if (total) total.value = importe ? importe.toFixed(2) : "";
+            totalGeneral += importe;
+        });
+        var t = document.getElementById("totalProductos");
+        if (t) t.value = totalGeneral.toFixed(2);
+    }
+
+    document.querySelectorAll(".js-ingreso, .js-gasto").forEach(function (x) {
+        x.addEventListener("input", recalcularFamilia);
+    });
+    ["ingresoEstadoCuenta", "ingresoTotalOficio"].forEach(function (nombre) {
+        var campo = form.elements[nombre];
+        if (campo) campo.addEventListener("input", recalcularIngresoTotalNegocio);
+    });
+
+    document.querySelectorAll('#productosBody input[data-field="costo"], #productosBody input[data-field="venta"], #productosBody input[data-field="cantidad"]').forEach(function (x) {
+        x.addEventListener("input", recalcularProductos);
+    });
+
+    form.addEventListener("submit", function (event) { event.preventDefault(); alert("Registro pendiente de conexión con la API segura."); });
+    recalcularFamilia();
+    recalcularProductos();
+});
+</script></body></html>
