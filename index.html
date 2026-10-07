@@ -643,26 +643,14 @@
                 <section class="eval-section">
                     <h2 class="eval-section-title">Gastos Familiares</h2>
 
-                    @foreach (var item in new[] {
-                        ("viviendaAlquiler", "Vivienda / Alquiler"),
-                        ("alimentacion", "Alimentación"),
-                        ("educacion", "Educación"),
-                        ("transporte", "Transporte"),
-                        ("salud", "Salud"),
-                        ("serviciosPublicos", "Servicios Públicos"),
-                        ("recreacion", "Recreación"),
-                        ("otrosGastos", "Otros Gastos")
-                    })
-                    {
-                        <div class="eval-row">
-                            <div class="eval-label">@item.Item2</div>
-                            <div class="eval-field eval-money">
-                                <span class="eval-currency">S/</span>
-                                <input class="js-gasto" name="@item.Item1" type="number" min="0" step="0.01" />
-                            </div>
-                        </div>
-                    }
-
+                    <div class="eval-row"><div class="eval-label">Vivienda / Alquiler</div><div class="eval-field eval-money"><span class="eval-currency">S/</span><input class="js-gasto" name="viviendaAlquiler" type="number" min="0" step="0.01" /></div></div>
+                    <div class="eval-row"><div class="eval-label">Alimentación</div><div class="eval-field eval-money"><span class="eval-currency">S/</span><input class="js-gasto" name="alimentacion" type="number" min="0" step="0.01" /></div></div>
+                    <div class="eval-row"><div class="eval-label">Educación</div><div class="eval-field eval-money"><span class="eval-currency">S/</span><input class="js-gasto" name="educacion" type="number" min="0" step="0.01" /></div></div>
+                    <div class="eval-row"><div class="eval-label">Transporte</div><div class="eval-field eval-money"><span class="eval-currency">S/</span><input class="js-gasto" name="transporte" type="number" min="0" step="0.01" /></div></div>
+                    <div class="eval-row"><div class="eval-label">Salud</div><div class="eval-field eval-money"><span class="eval-currency">S/</span><input class="js-gasto" name="salud" type="number" min="0" step="0.01" /></div></div>
+                    <div class="eval-row"><div class="eval-label">Servicios Públicos</div><div class="eval-field eval-money"><span class="eval-currency">S/</span><input class="js-gasto" name="serviciosPublicos" type="number" min="0" step="0.01" /></div></div>
+                    <div class="eval-row"><div class="eval-label">Recreación</div><div class="eval-field eval-money"><span class="eval-currency">S/</span><input class="js-gasto" name="recreacion" type="number" min="0" step="0.01" /></div></div>
+                    <div class="eval-row"><div class="eval-label">Otros Gastos</div><div class="eval-field eval-money"><span class="eval-currency">S/</span><input class="js-gasto" name="otrosGastos" type="number" min="0" step="0.01" /></div></div>
                     <div class="eval-row eval-subtotal">
                         <div class="eval-label eval-subtotal">Sub Total (2)</div>
                         <div class="eval-field eval-money eval-subtotal">
@@ -715,16 +703,11 @@
                                 </tr>
                             </thead>
                             <tbody id="productosBody">
-                                @for (var i = 0; i < 5; i++)
-                                {
-                                    <tr>
-                                        <td><input class="product-name" data-field="producto" /></td>
-                                        <td><input data-field="costo" type="number" min="0" step="0.01" /></td>
-                                        <td><input data-field="venta" type="number" min="0" step="0.01" /></td>
-                                        <td><input data-field="cantidad" type="number" min="0" step="1" /></td>
-                                        <td><input data-field="total" readonly /></td>
-                                    </tr>
-                                }
+<tr><td><input class="product-name" data-field="producto" /></td><td><input data-field="costo" type="number" min="0" step="0.01" /></td><td><input data-field="venta" type="number" min="0" step="0.01" /></td><td><input data-field="cantidad" type="number" min="0" step="1" /></td><td><input data-field="total" readonly /></td></tr>
+<tr><td><input class="product-name" data-field="producto" /></td><td><input data-field="costo" type="number" min="0" step="0.01" /></td><td><input data-field="venta" type="number" min="0" step="0.01" /></td><td><input data-field="cantidad" type="number" min="0" step="1" /></td><td><input data-field="total" readonly /></td></tr>
+<tr><td><input class="product-name" data-field="producto" /></td><td><input data-field="costo" type="number" min="0" step="0.01" /></td><td><input data-field="venta" type="number" min="0" step="0.01" /></td><td><input data-field="cantidad" type="number" min="0" step="1" /></td><td><input data-field="total" readonly /></td></tr>
+<tr><td><input class="product-name" data-field="producto" /></td><td><input data-field="costo" type="number" min="0" step="0.01" /></td><td><input data-field="venta" type="number" min="0" step="0.01" /></td><td><input data-field="cantidad" type="number" min="0" step="1" /></td><td><input data-field="total" readonly /></td></tr>
+<tr><td><input class="product-name" data-field="producto" /></td><td><input data-field="costo" type="number" min="0" step="0.01" /></td><td><input data-field="venta" type="number" min="0" step="0.01" /></td><td><input data-field="cantidad" type="number" min="0" step="1" /></td><td><input data-field="total" readonly /></td></tr>
                             </tbody>
                         </table>
                     </div>
