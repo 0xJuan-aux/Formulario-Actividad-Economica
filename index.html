@@ -751,7 +751,7 @@
     </div>
 
     
-<div id="tabRegistro" class="eval-tab-content"><div class="eval-grid"><div class="eval-panel"><section class="eval-section"><h2 class="eval-section-title">REGISTRO</h2><p>Comparación de las dos evaluaciones más recientes desde SQL Server (solo lectura, campos limitados).</p><button type="button" id="demoBtn">Consultar registros reales</button><p id="demoStatus" role="status"></p><div id="demoOutput" style="overflow-x:auto"></div></section></div></div></div>
+<div id="tabRegistro" class="eval-tab-content"><div class="eval-grid"><div class="eval-panel"><section class="eval-section"><h2 class="eval-section-title">REGISTRO</h2><p>Comparación de las dos evaluaciones más recientes desde SQL Server (solo lectura, campos limitados).</p><p id="demoStatus" role="status"></p><div id="demoOutput" style="overflow-x:auto"></div></section></div></div></div>
 </div>
 <script>
 document.addEventListener("DOMContentLoaded", function () {
@@ -852,12 +852,10 @@ document.addEventListener("DOMContentLoaded", function () {
     recalcularProductos();
 });
 </script><script>
-document.getElementById('demoBtn').addEventListener('click', async function(){
-  const button=this;
+async function cargarRegistrosReales(){
   const status=document.getElementById('demoStatus');
   const output=document.getElementById('demoOutput');
   const fields=[['iCod_Evaluacion','Código'],['iPersonas_Cargo','Personas a cargo'],['vTipo_Trabajo','Tipo de trabajo'],['nOtros_Ingresos','Otros ingresos (S/)']];
-  button.disabled=true;
   status.textContent='Consultando registros reales...';
   output.replaceChildren();
   try{
@@ -876,6 +874,16 @@ document.getElementById('demoBtn').addEventListener('click', async function(){
     table.appendChild(body);output.appendChild(table);
     status.textContent='SQL Server vía WSS: '+result.registros.length+' registros reales. Consulta de solo lectura.';
   }catch(error){status.textContent='No se pudo consultar: '+error.message;}
-  finally{button.disabled=false;}
-});
+}
+const tabRegistroRadio=document.getElementById('evalVistaRegistro');
+let ultimaCarga=0;
+async function cargarAlAbrirRegistro(){
+  if(Date.now()-ultimaCarga<60000)return;
+  ultimaCarga=Date.now();
+  await cargarRegistrosReales();
+}
+if(tabRegistroRadio){
+  tabRegistroRadio.addEventListener('change',function(){if(this.checked)cargarAlAbrirRegistro();});
+  if(tabRegistroRadio.checked)cargarAlAbrirRegistro();
+}
 </script></body></html>
