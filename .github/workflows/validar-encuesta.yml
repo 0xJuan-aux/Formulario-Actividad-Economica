@@ -1,0 +1,49 @@
+name: Validar encuesta publica
+on:
+  push:
+    branches: [main]
+    paths:
+      - "index.html"
+      - ".github/workflows/validar-encuesta.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  prueba-formulario:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Verificar JavaScript y contrato del formulario publico
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import pathlib
+          import re
+          import subprocess
+
+          html = pathlib.Path("index.html").read_text(encoding="utf-8")
+          for expected in (
+              'id="evaluacionEconomicaForm"',
+              'id="btnGuardarEvaluacion"',
+              'id="confirmacionEncuesta"',
+              'config.credencialesRequeridas === false',
+              'submission_id',
+              'https://atd-relay.onrender.com/api/actividad-economica/registrar',
+          ):
+              assert expected in html, expected
+          assert "clavePruebaRegistro" not in html, "La encuesta no debe pedir clave"
+          assert "X-ATD-Form-Test-Key" not in html, "No se permite clave del piloto en Pages"
+
+          scripts = re.findall(r"<script\b[^>]*>(.*?)</script\s*>", html, re.I | re.S)
+          assert scripts, "No hay scripts inline"
+          for i, script in enumerate(scripts):
+              path = pathlib.Path(f"/tmp/encuesta_{i}.js")
+              path.write_text(script, encoding="utf-8")
+              subprocess.run(["node", "--check", str(path)], check=True)
+          print(f"PASS: {len(scripts)} bloques JavaScript válidos, formulario anónimo consistente")
+          PY
