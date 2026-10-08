@@ -738,7 +738,7 @@
 
                 <div class="eval-actions">
                     <button type="reset" class="eval-btn eval-btn-secondary">Limpiar</button>
-                    <button type="submit" class="eval-btn eval-btn-primary" id="btnGuardarEvaluacion" disabled title="La API de registro aún no está conectada">Guardar evaluación</button>
+                    <button type="submit" class="eval-btn eval-btn-primary" id="btnGuardarEvaluacion" title="Prueba de conexión DEMO; no guarda datos">Probar guardado (DEMO)</button><p id="estadoGuardadoDemo" role="status" aria-live="polite"></p>
                 </div>
 
                 <div class="eval-note">
@@ -821,7 +821,33 @@ document.addEventListener("DOMContentLoaded", function () {
         x.addEventListener("input", recalcularProductos);
     });
 
-    form.addEventListener("submit", function (event) { event.preventDefault(); alert("Registro pendiente de conexión con la API segura."); });
+    form.addEventListener("submit", async function (event) {
+        event.preventDefault();
+        if (boton.disabled) return;
+        boton.disabled = true;
+        var textoOriginal = boton.textContent;
+        boton.textContent = "Probando conexión...";
+        var aviso = document.getElementById("estadoGuardadoDemo");
+        if (aviso) aviso.textContent = "Verificando conexión HTTPS sin transmitir los datos del formulario...";
+        try {
+            // DEMO público seguro: no se envían campos personales ni se escribe SQL.
+            // Este endpoint confirma HTTPS/Relay; NO demuestra todavía el recorrido WSS.
+            var respuesta = await fetch("https://atd-relay.onrender.com/api/actividad-economica/demo", {
+                method: "GET", cache: "no-store"
+            });
+            if (!respuesta.ok) throw new Error("HTTP " + respuesta.status);
+            var resultado = await respuesta.json();
+            if (resultado.modo !== "DEMO" || !Array.isArray(resultado.registros)) {
+                throw new Error("Respuesta de prueba inesperada");
+            }
+            if (aviso) aviso.textContent = "Prueba DEMO correcta: formulario → HTTPS → Relay. No se enviaron los datos ingresados ni se guardó ningún registro. Pendiente validar WSS y SQL.";
+        } catch (error) {
+            if (aviso) aviso.textContent = "No se pudo completar la prueba DEMO: " + error.message;
+        } finally {
+            boton.disabled = false;
+            boton.textContent = textoOriginal;
+        }
+    });
     recalcularFamilia();
     recalcularProductos();
 });
