@@ -512,7 +512,7 @@
         }
     }
 
-</style></head><body><aside class="preview-banner"><strong>Copia independiente del formulario original.</strong> Los cálculos funcionan localmente. Guardar y consultar registros estarán disponibles cuando se conecte una API autenticada. No introduzcas datos reales durante esta prueba.</aside>
+</style></head><body><aside class="preview-banner"><strong>Evaluación Económica · piloto controlado.</strong> La consulta SQL ya está conectada. El registro real se habilitará únicamente cuando se despliegue la API segura y se configure una clave temporal de prueba. Utiliza datos ficticios durante la validación.</aside>
 <div class="eval-page">
     <div class="eval-header">
         <div>
@@ -738,7 +738,7 @@
 
                 <div class="eval-actions">
                     <button type="reset" class="eval-btn eval-btn-secondary">Limpiar</button>
-                    <button type="submit" class="eval-btn eval-btn-primary" id="btnGuardarEvaluacion" title="Prueba de conexión DEMO; no guarda datos">Probar guardado (DEMO)</button><p id="estadoGuardadoDemo" role="status" aria-live="polite"></p>
+                    <label for="clavePruebaRegistro" style="display:block">Clave temporal de prueba (no se almacena)</label><input type="password" id="clavePruebaRegistro" autocomplete="off" spellcheck="false" placeholder="Solo para la primera prueba controlada" style="max-width:310px" /><button type="submit" class="eval-btn eval-btn-primary" id="btnGuardarEvaluacion" disabled title="Pendiente de habilitación segura en el servidor">Guardar evaluación (pendiente de activar)</button><p id="estadoGuardadoDemo" role="status" aria-live="polite"></p>
                 </div>
 
                 <div class="eval-note">
@@ -821,33 +821,132 @@ document.addEventListener("DOMContentLoaded", function () {
         x.addEventListener("input", recalcularProductos);
     });
 
+    var registroConfig = null;
+    var envioPendiente = null;
+    var aviso = document.getElementById("estadoGuardadoDemo");
+
+    async function habilitarSiDisponible() {
+        try {
+            const response = await fetch("https://atd-relay.onrender.com/api/actividad-economica/registro-config", {cache: "no-store"});
+            if (!response.ok) throw new Error("API no disponible");
+            const config = await response.json();
+            registroConfig = config && config.registroHabilitado && config.campaign_id ? config : null;
+            boton.disabled = !registroConfig;
+            boton.textContent = registroConfig ? "Guardar evaluación" : "Guardar evaluación (pendiente de activar)";
+            if (aviso) aviso.textContent = registroConfig
+                ? "Piloto habilitado. Para registrar, utiliza datos ficticios y la clave temporal de prueba."
+                : "El registro real sigue deshabilitado hasta configurar y desplegar los servicios.";
+        } catch (_) {
+            boton.disabled = true;
+            if (aviso) aviso.textContent = "No se pudo verificar el estado del servicio de registro.";
+        }
+    }
+
+    function numeroEstricto(nombre) {
+        const raw = val(nombre).trim();
+        if (!raw) return 0;
+        const valor = Number(raw);
+        if (!Number.isFinite(valor)) throw new Error("Número inválido: " + nombre);
+        return valor;
+    }
+
+    function construirEvaluacion() {
+        const camposTexto = [
+            "dniEjecutivo", "nombreEjecutivo", "regionEjecutivo", "supervisor",
+            "nroDocumento", "nombreCliente", "direccion", "casado",
+            "telefono", "tipoTrabajo", "oficio", "rubroNegocio", "observaciones"
+        ];
+        const camposNumero = [
+            "pensiones", "rentas", "otrosIngresos", "viviendaAlquiler",
+            "alimentacion", "educacion", "transporte", "salud",
+            "serviciosPublicos", "recreacion", "otrosGastos",
+            "ingresoEstadoCuenta", "ingresoTotalOficio", "ingresoTotalNegocio"
+        ];
+        const data = {};
+        camposTexto.forEach(key => { data[key] = val(key).trim(); });
+        camposNumero.forEach(key => { data[key] = numeroEstricto(key); });
+        data.personasCargo = numeroEstricto("personasCargo");
+        if (!Number.isInteger(data.personasCargo) || data.personasCargo < 0 || data.personasCargo > 100) {
+            throw new Error("Personas a cargo debe ser un entero entre 0 y 100");
+        }
+        if (!data.tipoTrabajo) throw new Error("El tipo de trabajo es obligatorio");
+        data.productos = [];
+        document.querySelectorAll("#productosBody tr").forEach((fila, i) => {
+            const producto = fila.querySelector('[data-field="producto"]');
+            if (!producto || !producto.value.trim()) return;
+            const value = key => {
+                const input = fila.querySelector('[data-field="' + key + '"]');
+                const raw = input ? input.value.trim() : "";
+                const result = raw ? Number(raw) : 0;
+                if (!Number.isFinite(result)) throw new Error("Importe de producto inválido");
+                return result;
+            };
+            const cantidad = value("cantidad");
+            if (!Number.isInteger(cantidad) || cantidad < 0) throw new Error("Cantidad de producto inválida");
+            data.productos.push({
+                orden: i + 1, producto: producto.value.trim(),
+                costo: value("costo"), venta: value("venta"), cantidad: cantidad
+            });
+        });
+        return data;
+    }
+
     form.addEventListener("submit", async function (event) {
         event.preventDefault();
-        if (boton.disabled) return;
-        boton.disabled = true;
-        var textoOriginal = boton.textContent;
-        boton.textContent = "Probando conexión...";
-        var aviso = document.getElementById("estadoGuardadoDemo");
-        if (aviso) aviso.textContent = "Verificando conexión HTTPS sin transmitir los datos del formulario...";
+        if (boton.disabled || !registroConfig) return;
+        const clave = document.getElementById("clavePruebaRegistro").value;
+        if (!clave) {
+            if (aviso) aviso.textContent = "Ingresa la clave temporal para realizar la prueba.";
+            return;
+        }
+        let evaluacion;
         try {
-            // DEMO público seguro: no se envían campos personales ni se escribe SQL.
-            // Este endpoint confirma HTTPS/Relay; NO demuestra todavía el recorrido WSS.
-            var respuesta = await fetch("https://atd-relay.onrender.com/api/actividad-economica/demo", {
-                method: "GET", cache: "no-store"
-            });
-            if (!respuesta.ok) throw new Error("HTTP " + respuesta.status);
-            var resultado = await respuesta.json();
-            if (resultado.modo !== "DEMO" || !Array.isArray(resultado.registros)) {
-                throw new Error("Respuesta de prueba inesperada");
-            }
-            if (aviso) aviso.textContent = "Prueba DEMO correcta: formulario → HTTPS → Relay. No se enviaron los datos ingresados ni se guardó ningún registro. Pendiente validar WSS y SQL.";
+            evaluacion = construirEvaluacion();
         } catch (error) {
-            if (aviso) aviso.textContent = "No se pudo completar la prueba DEMO: " + error.message;
+            if (aviso) aviso.textContent = error.message;
+            return;
+        }
+        const fingerprint = JSON.stringify(evaluacion);
+        if (!envioPendiente || envioPendiente.fingerprint !== fingerprint) {
+            envioPendiente = {fingerprint: fingerprint, submission_id: crypto.randomUUID()};
+        }
+        boton.disabled = true;
+        boton.textContent = "Registrando...";
+        if (aviso) aviso.textContent = "Solicitando confirmación de SQL Server...";
+        try {
+            const response = await fetch("https://atd-relay.onrender.com/api/actividad-economica/registrar", {
+                method: "POST",
+                cache: "no-store",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-ATD-Form-Test-Key": clave
+                },
+                body: JSON.stringify({
+                    campaign_id: registroConfig.campaign_id,
+                    submission_id: envioPendiente.submission_id,
+                    evaluation: evaluacion
+                })
+            });
+            const result = await response.json();
+            if (!response.ok || !result.bResultado) {
+                throw new Error(result.detail || result.vMensaje || "HTTP " + response.status);
+            }
+            if (aviso) aviso.textContent = "Registrado en SQL Server. Código: " + result.iCod_Evaluacion +
+                (result.replay ? " (reintento reconocido)" : "");
+            envioPendiente = null;
+            form.reset();
+            const tab = document.getElementById("evalVistaRegistro");
+            if (tab) tab.checked = true;
+            if (typeof cargarRegistrosReales === "function") await cargarRegistrosReales();
+        } catch (error) {
+            if (aviso) aviso.textContent = "No se confirmó el registro: " + error.message +
+                ". Si reintentas sin cambiar los datos, se usará el mismo identificador.";
         } finally {
-            boton.disabled = false;
-            boton.textContent = textoOriginal;
+            boton.disabled = !registroConfig;
+            boton.textContent = registroConfig ? "Guardar evaluación" : "Guardar evaluación (pendiente de activar)";
         }
     });
+    habilitarSiDisponible();
     recalcularFamilia();
     recalcularProductos();
 });
