@@ -751,7 +751,7 @@
     </div>
 
     
-<div id="tabRegistro" class="eval-tab-content"><div class="eval-grid"><div class="eval-panel"><section class="eval-section"><h2 class="eval-section-title">REGISTRO</h2><p>Prueba HTTPS con datos ficticios. La consulta real y edición requieren autenticación.</p><button type="button" id="demoBtn">Probar conexión HTTPS (DEMO)</button><p id="demoStatus" role="status"></p><pre id="demoOutput" style="white-space:pre-wrap;overflow:auto"></pre></section></div></div></div>
+<div id="tabRegistro" class="eval-tab-content"><div class="eval-grid"><div class="eval-panel"><section class="eval-section"><h2 class="eval-section-title">REGISTRO</h2><p>Comparación de las dos evaluaciones más recientes desde SQL Server (solo lectura, campos limitados).</p><button type="button" id="demoBtn">Consultar registros reales</button><p id="demoStatus" role="status"></p><div id="demoOutput" style="overflow-x:auto"></div></section></div></div></div>
 </div>
 <script>
 document.addEventListener("DOMContentLoaded", function () {
@@ -853,16 +853,29 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 </script><script>
 document.getElementById('demoBtn').addEventListener('click', async function(){
+  const button=this;
   const status=document.getElementById('demoStatus');
   const output=document.getElementById('demoOutput');
-  status.textContent='Consultando servicio HTTPS...';output.textContent='';
+  const fields=[['iCod_Evaluacion','Código'],['iPersonas_Cargo','Personas a cargo'],['vTipo_Trabajo','Tipo de trabajo'],['nOtros_Ingresos','Otros ingresos (S/)']];
+  button.disabled=true;
+  status.textContent='Consultando registros reales...';
+  output.replaceChildren();
   try{
-    const response=await fetch('https://atd-relay.onrender.com/api/actividad-economica/demo',{cache:'no-store'});
+    const response=await fetch('https://atd-relay.onrender.com/api/actividad-economica/comparacion',{cache:'no-store'});
     if(!response.ok)throw new Error('HTTP '+response.status);
     const result=await response.json();
-    if(result.modo!=='DEMO'||!Array.isArray(result.registros))throw new Error('Respuesta inesperada');
-    status.textContent='Conexión correcta. Registros ficticios: '+result.registros.length;
-    output.textContent=JSON.stringify(result.registros,null,2);
-  }catch(error){status.textContent='Error de conexión: '+error.message;}
+    if(result.modo!=='READONLY'||!Array.isArray(result.registros))throw new Error('Respuesta inesperada');
+    const table=document.createElement('table');
+    table.style.cssText='width:100%;border-collapse:collapse;text-align:left';
+    const head=document.createElement('thead');
+    const headRow=document.createElement('tr');
+    fields.forEach(([key,title])=>{const th=document.createElement('th');th.textContent=title;th.style.cssText='padding:8px;border-bottom:1px solid #aaa';headRow.appendChild(th)});
+    head.appendChild(headRow);table.appendChild(head);
+    const body=document.createElement('tbody');
+    result.registros.forEach(record=>{const tr=document.createElement('tr');fields.forEach(([key])=>{const td=document.createElement('td');td.textContent=record[key]??'';td.style.cssText='padding:8px;border-bottom:1px solid #ddd';tr.appendChild(td)});body.appendChild(tr)});
+    table.appendChild(body);output.appendChild(table);
+    status.textContent='SQL Server vía WSS: '+result.registros.length+' registros reales. Consulta de solo lectura.';
+  }catch(error){status.textContent='No se pudo consultar: '+error.message;}
+  finally{button.disabled=false;}
 });
 </script></body></html>
