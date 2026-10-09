@@ -827,9 +827,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
         var estadoCuenta = form.elements["ingresoEstadoCuenta"];
         var totalOficio = form.elements["ingresoTotalOficio"];
+        var totalProductos = document.getElementById("totalProductos");
         var totalNegocio = form.elements["ingresoTotalNegocio"];
 
-        var resultado = (subtotal1 + n(estadoCuenta && estadoCuenta.value) + n(totalOficio && totalOficio.value)) - subtotal2;
+        var resultado = (subtotal1 + n(estadoCuenta && estadoCuenta.value) + n(totalOficio && totalOficio.value) + n(totalProductos && totalProductos.value)) - subtotal2;
         if (totalNegocio) totalNegocio.value = resultado.toFixed(2);
     }
 
@@ -846,6 +847,7 @@ document.addEventListener("DOMContentLoaded", function () {
         });
         var t = document.getElementById("totalProductos");
         if (t) t.value = totalGeneral.toFixed(2);
+        recalcularIngresoTotalNegocio();
     }
 
     document.querySelectorAll(".js-ingreso, .js-gasto").forEach(function (x) {
