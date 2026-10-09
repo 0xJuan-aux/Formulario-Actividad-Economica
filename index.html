@@ -460,6 +460,23 @@
         cursor: not-allowed;
         font-weight: 800;
     }
+    /* Paridad visual REGISTRO con la grilla autenticada de intranet. */
+    .eval-registro-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin: 0 0 13px; }
+    .eval-registro-aviso { margin: 0; flex: 1 1 420px; font-size: .91rem; color: var(--eval-muted); }
+    .eval-registro-toggle { border: 1px solid #e5c7ca; border-radius: 8px; background: #fff8f8; color: var(--eval-red-dark); padding: 8px 12px; font-weight: 800; cursor: pointer; }
+    .eval-registro-toggle:hover { border-color: var(--eval-red); }
+    .eval-registro-estado { margin: 10px 0 0; font-size: .86rem; color: var(--eval-muted); }
+    #tabRegistro .eval-registro thead th { min-width: 140px; }
+    #tabRegistro .eval-registro thead th.eval-action-head { min-width: 74px; }
+    #tabRegistro .eval-sort-btn { display: inline-flex; align-items: center; gap: 5px; background: transparent; color: inherit; font: inherit; font-weight: inherit; border: 0; padding: 0; cursor: pointer; white-space: nowrap; }
+    #tabRegistro .eval-sort-btn:hover { text-decoration: underline; }
+    #tabRegistro .eval-col-locked { color: #9a6167; font-weight: 800; }
+    #tabRegistro .eval-cell-private { text-align: center; color: #8c7b7e; background: #f6f1f2; }
+    #tabRegistro .filter-row input:disabled { background: #f5f2f2; color: #8c7b7e; cursor: not-allowed; }
+    #tabRegistro .eval-action-cell .eval-edit-btn { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
+    #tabRegistro .eval-registro td.eval-empty { text-align: center; }
+    @media (max-width: 640px) { .eval-registro-toolbar { align-items: stretch; } .eval-registro-toggle { width: 100%; } }
+
     .eval-empty {
         text-align: center !important;
         padding: 26px !important;
@@ -751,7 +768,28 @@
     </div>
 
     
-<div id="tabRegistro" class="eval-tab-content"><div class="eval-grid"><div class="eval-panel"><section class="eval-section"><h2 class="eval-section-title">REGISTRO</h2><p>Comparación de las dos evaluaciones más recientes desde SQL Server (solo lectura, campos limitados). Para actualizar registros existentes, ingresa al módulo Cobranzas → Evaluación Económica del portal interno de AtencionDigital con una sesión autorizada; esta vista pública no permite modificar registros.</p><p id="confirmacionEncuesta" role="status" aria-live="polite" style="font-weight:700"></p><p id="demoStatus" role="status"></p><div id="demoOutput" style="overflow-x:auto"></div></section></div></div></div>
+<div id="tabRegistro" class="eval-tab-content">
+  <div class="eval-grid">
+    <div class="eval-panel">
+      <section class="eval-section">
+        <h2 class="eval-section-title">Registro de Evaluaciones Económicas</h2>
+        <p id="confirmacionEncuesta" role="status" aria-live="polite" style="font-weight:700"></p>
+        <div class="eval-registro-toolbar">
+          <p class="eval-registro-aviso">Estructura de grilla equivalente a la intranet. La vista pública muestra únicamente los últimos dos registros y cuatro campos autorizados; los demás permanecen protegidos.</p>
+          <button type="button" id="alternarColumnasRegistro" class="eval-registro-toggle" aria-pressed="true">Mostrar solo columnas públicas</button>
+        </div>
+        <div class="eval-registro-wrap" id="demoOutput">
+          <table class="eval-registro" id="tablaRegistroEvaluaciones" aria-label="Evaluaciones económicas, vista pública de solo lectura">
+            <thead id="cabeceraRegistroEvaluaciones"></thead>
+            <tbody id="registroEvaluacionesBody"><tr><td class="eval-empty">Consultando registros…</td></tr></tbody>
+          </table>
+        </div>
+        <p id="demoStatus" role="status" aria-live="polite" class="eval-registro-estado"></p>
+        <div class="eval-note">Grilla con encabezados comerciales, filtros, ordenamiento y columna Acción fija, como el formulario interno. Los datos reservados y su edición solo se gestionan desde el portal interno autenticado.</div>
+      </section>
+    </div>
+  </div>
+</div>
 </div>
 <script>
 document.addEventListener("DOMContentLoaded", function () {
@@ -955,28 +993,193 @@ document.addEventListener("DOMContentLoaded", function () {
     recalcularProductos();
 });
 </script><script>
+// Encabezados comerciales: mismo orden que la vista de registro interna.
+const columnasRegistro = [
+  ['iCod_Evaluacion','Código'],
+  ['vDni_Ejecutivo','DNI Ejecutivo'],
+  ['vNombre_Ejecutivo','Ejecutivo'],
+  ['vRegion_Ejecutivo','Región'],
+  ['vSupervisor','Supervisor'],
+  ['vNro_Documento','Nro. Documento'],
+  ['vNombre_Cliente','Cliente'],
+  ['vDireccion','Dirección'],
+  ['vCasado','Casado'],
+  ['vTelefono','Teléfono'],
+  ['iPersonas_Cargo','Personas a cargo'],
+  ['vTipo_Trabajo','Tipo de trabajo'],
+  ['nPensiones','Pensiones'],
+  ['nRentas','Rentas'],
+  ['nOtros_Ingresos','Otros ingresos'],
+  ['nVivienda_Alquiler','Vivienda / Alquiler'],
+  ['nAlimentacion','Alimentación'],
+  ['nEducacion','Educación'],
+  ['nTransporte','Transporte'],
+  ['nSalud','Salud'],
+  ['nServicios_Publicos','Servicios públicos'],
+  ['nRecreacion','Recreación'],
+  ['nOtros_Gastos','Otros gastos'],
+  ['vOficio','Oficio'],
+  ['nIngreso_Estado_Cuenta','Ingresos Estado de Cuenta'],
+  ['nIngreso_Total_Oficio','Ingresos total del Oficio'],
+  ['vRubro_Negocio','Rubro del Negocio'],
+  ['nIngreso_Total_Negocio','Ingresos total del Negocio'],
+  ['vObservaciones','Observaciones'],
+  ['dFecha_Registro','Fecha de registro'],
+  ['vUsuario_Registro','Usuario'],
+  ['iEstado','Estado']
+];
+const clavesPublicasRegistro = new Set(['iCod_Evaluacion','iPersonas_Cargo','vTipo_Trabajo','nOtros_Ingresos']);
+const linkGestionInterna = 'http://192.168.88.24:8080/Cobranzas/EvaluacionEconomica#registro';
+let mostrarEstructuraCompleta = true;
+let registrosPublicos = [];
+let filtrosRegistro = {};
+let ordenarRegistroPor = 'iCod_Evaluacion';
+let ordenAscendenteRegistro = false;
+const botonColumnasRegistro = document.getElementById('alternarColumnasRegistro');
+function columnasVisiblesRegistro() {
+  return mostrarEstructuraCompleta ? columnasRegistro : columnasRegistro.filter(([key])=>clavesPublicasRegistro.has(key));
+}
+function textoValorPublico(key, valor) {
+  if(valor === null || valor === undefined) return '';
+  if(key === 'nOtros_Ingresos') {
+    const n = Number(valor);
+    return Number.isFinite(n) ? n.toLocaleString('es-PE',{minimumFractionDigits:2,maximumFractionDigits:2}) : '';
+  }
+  return String(valor);
+}
+function aplicarFiltrosYOrdenRegistro() {
+  const tbody = document.getElementById('registroEvaluacionesBody');
+  if(!tbody) return;
+  const columnas = columnasVisiblesRegistro();
+  const filtrados = registrosPublicos.filter(record =>
+    columnas.every(([key]) =>
+      !filtrosRegistro[key] || textoValorPublico(key,record[key]).toLocaleLowerCase('es-PE').includes(filtrosRegistro[key])
+    )
+  );
+  filtrados.sort((a,b)=>{
+    const x=a[ordenarRegistroPor],y=b[ordenarRegistroPor];
+    const numeric=['iCod_Evaluacion','iPersonas_Cargo','nOtros_Ingresos'].includes(ordenarRegistroPor);
+    const res=numeric ? (Number(x)||0)-(Number(y)||0) : String(x??'').localeCompare(String(y??''),'es');
+    return ordenAscendenteRegistro?res:-res;
+  });
+  tbody.replaceChildren();
+  if(!filtrados.length){
+    const tr=document.createElement('tr'),td=document.createElement('td');
+    td.colSpan=columnas.length+1;
+    td.className='eval-empty';
+    td.textContent=registrosPublicos.length?'No hay coincidencias con los filtros.':'Aún no hay evaluaciones para mostrar.';
+    tr.appendChild(td);tbody.appendChild(tr);return;
+  }
+  filtrados.forEach(record=>{
+    const tr=document.createElement('tr');
+    columnas.forEach(([key])=>{
+      const td=document.createElement('td');
+      td.setAttribute('data-columna',key);
+      if(clavesPublicasRegistro.has(key)){
+        td.textContent=textoValorPublico(key,record[key]);
+      }else{
+        td.textContent='🔒';
+        td.className='eval-cell-private';
+        td.title='Dato reservado: solo disponible en la intranet autenticada';
+        td.setAttribute('aria-label','Dato reservado');
+      }
+      tr.appendChild(td);
+    });
+    const celdaAccion=document.createElement('td');
+    celdaAccion.className='eval-action-cell';
+    const enlace=document.createElement('a');
+    enlace.className='eval-edit-btn';
+    enlace.href=linkGestionInterna;
+    enlace.target='_blank';
+    enlace.rel='noopener noreferrer';
+    enlace.textContent='✎';
+    enlace.title='Abrir intranet para gestionar registros con sesión autorizada';
+    enlace.setAttribute('aria-label','Abrir registro interno autorizado');
+    celdaAccion.appendChild(enlace);tr.appendChild(celdaAccion);
+    tbody.appendChild(tr);
+  });
+}
+function dibujarCabeceraRegistro(){
+  const thead=document.getElementById('cabeceraRegistroEvaluaciones');
+  if(!thead) return;
+  thead.replaceChildren();
+  const columnas=columnasVisiblesRegistro();
+  const filaTitulo=document.createElement('tr');
+  const filaFiltros=document.createElement('tr');
+  filaFiltros.className='filter-row';
+  columnas.forEach(([key,title])=>{
+    const th=document.createElement('th');
+    if(clavesPublicasRegistro.has(key)){
+      const sort=document.createElement('button');
+      sort.type='button';
+      sort.className='eval-sort-btn';
+      sort.textContent=title+' ↕';
+      sort.title='Ordenar por '+title;
+      sort.addEventListener('click',()=>{
+        if(ordenarRegistroPor===key) ordenAscendenteRegistro=!ordenAscendenteRegistro;
+        else { ordenarRegistroPor=key; ordenAscendenteRegistro=true; }
+        aplicarFiltrosYOrdenRegistro();
+      });
+      th.appendChild(sort);
+    } else {
+      th.className='eval-col-locked';
+      th.textContent=title+' 🔒';
+      th.title='La columna está disponible solo en la intranet';
+    }
+    filaTitulo.appendChild(th);
+    const filtroTh=document.createElement('th');
+    const filtro=document.createElement('input');
+    filtro.type='search'; filtro.placeholder=clavesPublicasRegistro.has(key)?'Filtrar':'Reservado';
+    filtro.setAttribute('aria-label','Filtrar '+title);
+    filtro.disabled=!clavesPublicasRegistro.has(key);
+    if(!filtro.disabled){
+      filtro.value=filtrosRegistro[key]||'';
+      filtro.addEventListener('input',()=>{
+        filtrosRegistro[key]=filtro.value.trim().toLocaleLowerCase('es-PE');
+        aplicarFiltrosYOrdenRegistro();
+      });
+    }
+    filtroTh.appendChild(filtro);filaFiltros.appendChild(filtroTh);
+  });
+  const accionTh=document.createElement('th');
+  accionTh.className='eval-action-head';
+  accionTh.textContent='Acción';
+  filaTitulo.appendChild(accionTh);
+  const accionFiltro=document.createElement('th');
+  filaFiltros.appendChild(accionFiltro);
+  thead.append(filaTitulo,filaFiltros);
+  if(botonColumnasRegistro){
+    botonColumnasRegistro.textContent=mostrarEstructuraCompleta?'Mostrar solo columnas públicas':'Ver estructura completa de la intranet';
+    botonColumnasRegistro.setAttribute('aria-pressed',String(mostrarEstructuraCompleta));
+  }
+  aplicarFiltrosYOrdenRegistro();
+}
+if(botonColumnasRegistro){
+  botonColumnasRegistro.addEventListener('click',()=>{
+    mostrarEstructuraCompleta=!mostrarEstructuraCompleta;
+    dibujarCabeceraRegistro();
+  });
+}
 async function cargarRegistrosReales(){
   const status=document.getElementById('demoStatus');
-  const output=document.getElementById('demoOutput');
-  const fields=[['iCod_Evaluacion','Código'],['iPersonas_Cargo','Personas a cargo'],['vTipo_Trabajo','Tipo de trabajo'],['nOtros_Ingresos','Otros ingresos (S/)']];
+  if(!status)return;
   status.textContent='Consultando registros reales...';
-  output.replaceChildren();
-  try{
+  try {
     const response=await fetch('https://atd-relay.onrender.com/api/actividad-economica/comparacion',{cache:'no-store'});
     if(!response.ok)throw new Error('HTTP '+response.status);
     const result=await response.json();
     if(result.modo!=='READONLY'||!Array.isArray(result.registros))throw new Error('Respuesta inesperada');
-    const table=document.createElement('table');
-    table.style.cssText='width:100%;border-collapse:collapse;text-align:left';
-    const head=document.createElement('thead');
-    const headRow=document.createElement('tr');
-    fields.forEach(([key,title])=>{const th=document.createElement('th');th.textContent=title;th.style.cssText='padding:8px;border-bottom:1px solid #aaa';headRow.appendChild(th)});
-    head.appendChild(headRow);table.appendChild(head);
-    const body=document.createElement('tbody');
-    result.registros.forEach(record=>{const tr=document.createElement('tr');fields.forEach(([key])=>{const td=document.createElement('td');td.textContent=record[key]??'';td.style.cssText='padding:8px;border-bottom:1px solid #ddd';tr.appendChild(td)});body.appendChild(tr)});
-    table.appendChild(body);output.appendChild(table);
-    status.textContent='SQL Server vía WSS: '+result.registros.length+' registros reales. Consulta de solo lectura.';
-  }catch(error){status.textContent='No se pudo consultar: '+error.message;}
+    // Solo se renderizan cuatro campos explicitamente autorizados por la API.
+    registrosPublicos=result.registros.map(row=>Object.fromEntries(
+      [...clavesPublicasRegistro].map(key=>[key, row[key]??null])
+    ));
+    dibujarCabeceraRegistro();
+    status.textContent='SQL Server vía WSS: '+registrosPublicos.length+' registros recientes. Consulta de solo lectura.';
+  } catch(error) {
+    registrosPublicos=[];
+    dibujarCabeceraRegistro();
+    status.textContent='No se pudo consultar: '+error.message;
+  }
 }
 const tabRegistroRadio=document.getElementById('evalVistaRegistro');
 let ultimaCarga=0;
