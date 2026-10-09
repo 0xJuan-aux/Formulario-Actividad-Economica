@@ -1,0 +1,40 @@
+name: Validate Pages HTML and JavaScript
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract inline JavaScript
+        shell: bash
+        run: |
+          python - <<'PY'
+          import pathlib
+          import re
+          html = pathlib.Path("index.html").read_text(encoding="utf-8")
+          scripts = re.findall(r"<script(?:\s[^>]*)?>(.*?)</script\s*>", html, flags=re.I | re.S)
+          if len(scripts) != 2:
+              raise SystemExit(f"Expected 2 inline scripts, got {len(scripts)}")
+          for i, script in enumerate(scripts):
+              pathlib.Path(f"/tmp/pages-script-{i}.js").write_text(script, encoding="utf-8")
+          assert "id=\"tablaRegistroEvaluaciones\"" in html
+          assert "id=\"registroEvaluacionesBody\"" in html
+          assert "/api/actividad-economica/comparacion" in html
+          print(f"HTML and {len(scripts)} inline scripts extracted")
+          PY
+      - name: Syntax-check JavaScript with Node
+        shell: bash
+        run: |
+          for file in /tmp/pages-script-*.js; do
+            node --check "$file"
+          done
