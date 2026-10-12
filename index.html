@@ -505,6 +505,28 @@
         transform: none !important;
     }
 
+
+    /* Editor externo: diálogo de inicio de sesión sin exponer la intranet. */
+    .eval-editor-login { border: 1px solid #edc7cc; border-radius: 14px;
+        padding: 22px; width: min(420px, calc(100vw - 26px)); max-width: 100%;
+        box-shadow: 0 18px 65px rgba(20,20,20,.24); }
+    .eval-editor-login::backdrop { background: rgba(15,15,20,.5); }
+    .eval-editor-login h3 { margin: 0 0 16px; color: var(--eval-red-dark); font-size: 1.1rem; }
+    .eval-editor-login form { display: grid; gap: 10px; }
+    .eval-editor-login label { font-weight: 700; font-size: .88rem; }
+    .eval-editor-login input { width: 100%; border: 1px solid #d8c0c4;
+        border-radius: 7px; padding: 10px; font: inherit; }
+    .eval-editor-actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 8px; }
+    .eval-editor-actions button, .eval-editor-access { border: 1px solid #cf99a0;
+        border-radius: 8px; padding: 8px 11px; cursor: pointer; font-weight: 750;
+        background: #fff8f8; color: #9f0511; }
+    .eval-editor-access:disabled { opacity: .55; cursor: not-allowed; }
+    .eval-editor-actions .primary { background: var(--eval-red); color: white; border-color: var(--eval-red); }
+    .eval-editor-field { width: 100%; min-width: 90px; max-width: 200px;
+        padding: 5px; border: 1px solid #d8b5ba; border-radius: 6px; font: inherit; }
+    .eval-row-editing td { background: #fff8e9; }
+    .eval-editor-session { font-size: .82rem; color: #60515a; }
+
     @keyframes evalSectionIn {
         from { opacity: 0; transform: translateY(8px); }
         to { opacity: 1; transform: translateY(0); }
@@ -799,6 +821,9 @@
         <div class="eval-registro-toolbar">
           <p class="eval-registro-aviso">Estructura de grilla equivalente a la intranet. La vista pública muestra únicamente los últimos dos registros y cuatro campos autorizados; los demás permanecen protegidos.</p>
           <button type="button" id="alternarColumnasRegistro" class="eval-registro-toggle" aria-pressed="true">Mostrar solo columnas públicas</button>
+          <button type="button" id="abrirAccesoEditor" class="eval-editor-access" disabled>Acceso para edición</button>
+          <button type="button" id="cerrarSesionEditor" class="eval-editor-access" hidden>Cerrar sesión</button>
+          <span id="estadoSesionEditor" class="eval-editor-session" aria-live="polite"></span>
         </div>
         <div class="eval-registro-wrap" id="demoOutput">
           <table class="eval-registro" id="tablaRegistroEvaluaciones" aria-label="Evaluaciones económicas, vista pública de solo lectura">
@@ -813,7 +838,22 @@
   </div>
 </div>
 </div>
+<dialog id="dialogoAccesoEditor" class="eval-editor-login" aria-labelledby="tituloAccesoEditor">
+  <h3 id="tituloAccesoEditor">Acceso exclusivo para modificar evaluaciones</h3>
+  <form id="formularioAccesoEditor" autocomplete="on">
+    <label for="usuarioEditor">Usuario</label>
+    <input id="usuarioEditor" name="username" autocomplete="username" required maxlength="64" />
+    <label for="claveEditor">Contraseña</label>
+    <input id="claveEditor" type="password" name="password" autocomplete="current-password" required maxlength="256" />
+    <p id="estadoAccesoEditor" role="status" aria-live="polite"></p>
+    <div class="eval-editor-actions">
+      <button type="submit" class="primary">Ingresar para editar</button>
+      <button type="button" id="cerrarDialogoEditor">Cancelar</button>
+    </div>
+  </form>
+</dialog>
 <script src="./evaluacion-bloqueos.js"></script>
+<script src="./editor-evaluacion.js"></script>
 <script>
 document.addEventListener("DOMContentLoaded", function () {
     var form = document.getElementById("evaluacionEconomicaForm");
@@ -1138,13 +1178,11 @@ function aplicarFiltrosYOrdenRegistro() {
     lapiz.type='button';
     lapiz.className='eval-edit-btn';
     lapiz.textContent='✎';
-    lapiz.title='Editar esta evaluación en la tabla (requiere autorización externa)';
+    lapiz.title='Editar evaluación ' + String(record.iCod_Evaluacion) + ' en esta tabla';
     lapiz.setAttribute('aria-label','Editar evaluación ' + String(record.iCod_Evaluacion));
+    lapiz.setAttribute('data-id',String(record.iCod_Evaluacion));
     lapiz.addEventListener('click',()=>{
-      // No abrir una dirección interna desde una página pública.
-      // La API actual solo permite UPDATE privado: no eludir esa protección.
-      const aviso=document.getElementById('demoStatus');
-      if(aviso) aviso.textContent='La edición directa necesita autorización administrativa en el formulario externo. El registro de nuevas evaluaciones sigue disponible.';
+      if(window.ATDEditorExterno) window.ATDEditorExterno.abrir(record.iCod_Evaluacion, tr, lapiz);
     });
     celdaAccion.appendChild(lapiz);tr.appendChild(celdaAccion);
     tbody.appendChild(tr);
@@ -1238,6 +1276,9 @@ async function cargarAlAbrirRegistro(){
   if(Date.now()-ultimaCarga<60000)return;
   ultimaCarga=Date.now();
   await cargarRegistrosReales();
+}
+if(window.ATDEditorExterno){
+  window.ATDEditorExterno.inicializar({refrescar: cargarRegistrosReales});
 }
 if(tabRegistroRadio){
   tabRegistroRadio.addEventListener('change',function(){if(this.checked)cargarAlAbrirRegistro();});
