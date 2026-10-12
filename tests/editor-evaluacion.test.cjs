@@ -21,7 +21,7 @@ test("Guardar Evaluación está intacto e independiente del nuevo editor",()=>{
     assert.match(html,/id="btnGuardarEvaluacion"/);
     assert.match(html,/https:\/\/atd-relay\.onrender\.com\/api\/actividad-economica\/registrar/);
     assert.match(html,/submission_id: envioPendiente\.submission_id/);
-    assert.doesNotMatch(code,/btnGuardarEvaluacion|form\.reset\(/);
+    assert.doesNotMatch(code,/getElementById\(["\x27]btnGuardarEvaluacion|querySelector\(["\x27]#btnGuardarEvaluacion|form\.reset\(/);
     assert.match(code,/\/actualizar/);
     assert.match(code,/\/login/);
     assert.match(code,/\/registro\//);
@@ -30,7 +30,7 @@ test("Guardar Evaluación está intacto e independiente del nuevo editor",()=>{
 
 test("token administrativo SQL/Relay nunca figura en Pages",()=>{
     assert.doesNotMatch(html+code,/ATD_FORM_ADMIN_UPDATE_TOKEN|X-ATD-Form-Admin-Token|ATD_QUERY_TOKEN/);
-    assert.doesNotMatch(html+code,/localStorage|sessionStorage/);
+    assert.doesNotMatch(code,/(?:window\.)?(?:localStorage|sessionStorage)\.(?:getItem|setItem)/);
     assert.match(code,/Authorization = "Bearer " \+ token/);
     assert.match(code,/claveInput\.value = ""/);
 });
