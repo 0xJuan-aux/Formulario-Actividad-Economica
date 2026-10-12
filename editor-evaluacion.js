@@ -214,7 +214,11 @@ La sesión del editor solo vive en memoria (no localStorage, no cookies).
             await guardarEdicion();
             return;
         }
-        if (!habilitado || !token) {
+        if (!habilitado) {
+            aviso("La edición de registros está pendiente de habilitación administrativa. Guardar Evaluación sigue funcionando.");
+            return;
+        }
+        if (!token) {
             pendiente = {id: codigo, row: row, button: button};
             solicitarLogin();
             return;
