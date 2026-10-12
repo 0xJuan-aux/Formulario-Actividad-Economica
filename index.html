@@ -483,6 +483,28 @@
         color: var(--eval-muted);
     }
 
+
+    /* Solo se sombrean campos inactivos; etiquetas y títulos permanecen visibles. */
+    .eval-section--locked .eval-field input:disabled,
+    .eval-section--locked .eval-field select:disabled,
+    .eval-section--locked .eval-field textarea:disabled,
+    .eval-section--locked .eval-products input:disabled,
+    .eval-section--locked #productosBody input:disabled {
+        background: #e0e4e8 !important;
+        color: #66717b !important;
+        -webkit-text-fill-color: #66717b;
+        box-shadow: inset 0 0 0 1px #c6cdd4 !important;
+        opacity: 1;
+        cursor: not-allowed;
+    }
+    .eval-btn:disabled {
+        background: #d0d2d5 !important;
+        box-shadow: none !important;
+        color: #60656a !important;
+        cursor: not-allowed;
+        transform: none !important;
+    }
+
     @keyframes evalSectionIn {
         from { opacity: 0; transform: translateY(8px); }
         to { opacity: 1; transform: translateY(0); }
@@ -577,25 +599,25 @@
                     </div>
                 </section>
 
-                <section class="eval-section">
+                <section class="eval-section eval-section--locked" data-etapa-bloqueo="cliente" aria-disabled="true">
                     <h2 class="eval-section-title">Información del cliente</h2>
 
                     <div class="eval-row">
                         <div class="eval-label">Nro. Documento</div>
-                        <div class="eval-field"><input name="nroDocumento" /></div>
+                        <div class="eval-field"><input name="nroDocumento" disabled /></div>
                     </div>
                     <div class="eval-row">
                         <div class="eval-label">Nombre Cliente</div>
-                        <div class="eval-field"><input name="nombreCliente" /></div>
+                        <div class="eval-field"><input name="nombreCliente" disabled /></div>
                     </div>
                     <div class="eval-row">
                         <div class="eval-label">Dirección</div>
-                        <div class="eval-field"><input name="direccion" /></div>
+                        <div class="eval-field"><input name="direccion" disabled /></div>
                     </div>
                     <div class="eval-row">
                         <div class="eval-label">Casado</div>
                         <div class="eval-field">
-                            <select name="casado">
+                            <select name="casado" disabled>
                                 <option value="">Seleccione</option>
                                 <option value="SI">Sí</option>
                                 <option value="NO">No</option>
@@ -604,16 +626,16 @@
                     </div>
                     <div class="eval-row">
                         <div class="eval-label">Teléfono</div>
-                        <div class="eval-field"><input name="telefono" inputmode="tel" /></div>
+                        <div class="eval-field"><input name="telefono" inputmode="tel" disabled /></div>
                     </div>
                     <div class="eval-row">
                         <div class="eval-label">Personas a cargo</div>
-                        <div class="eval-field"><input name="personasCargo" type="number" min="0" value="0" /></div>
+                        <div class="eval-field"><input name="personasCargo" type="number" min="0" step="1" placeholder="0 si no tiene personas a cargo" disabled /></div>
                     </div>
                     <div class="eval-row">
                         <div class="eval-label">Tipo trabajo</div>
                         <div class="eval-field">
-                            <select name="tipoTrabajo" id="tipoTrabajo">
+                            <select name="tipoTrabajo" id="tipoTrabajo" disabled>
                                 <option value="">Seleccione</option>
                                 <option value="DEPENDIENTE">Dependiente</option>
                                 <option value="INDEPENDIENTE">Independiente</option>
@@ -624,88 +646,88 @@
                     </div>
                 </section>
 
-                <section class="eval-section">
+                <section class="eval-section eval-section--locked" data-etapa-bloqueo="ingresos" aria-disabled="true">
                     <h2 class="eval-section-title">Ingresos Familiares (demostrables)</h2>
 
                     <div class="eval-row">
                         <div class="eval-label">Pensiones</div>
                         <div class="eval-field eval-money">
                             <span class="eval-currency">S/</span>
-                            <input class="js-ingreso" name="pensiones" type="number" min="0" step="0.01" />
+                            <input class="js-ingreso" name="pensiones" type="number" min="0" step="0.01" disabled />
                         </div>
                     </div>
                     <div class="eval-row">
                         <div class="eval-label">Rentas (Alquileres)</div>
                         <div class="eval-field eval-money">
                             <span class="eval-currency">S/</span>
-                            <input class="js-ingreso" name="rentas" type="number" min="0" step="0.01" />
+                            <input class="js-ingreso" name="rentas" type="number" min="0" step="0.01" disabled />
                         </div>
                     </div>
                     <div class="eval-row">
                         <div class="eval-label">Otros Ingresos</div>
                         <div class="eval-field eval-money">
                             <span class="eval-currency">S/</span>
-                            <input class="js-ingreso" name="otrosIngresos" type="number" min="0" step="0.01" />
+                            <input class="js-ingreso" name="otrosIngresos" type="number" min="0" step="0.01" disabled />
                         </div>
                     </div>
                     <div class="eval-row eval-subtotal">
                         <div class="eval-label eval-subtotal">Sub Total (1)</div>
                         <div class="eval-field eval-money eval-subtotal">
                             <span class="eval-currency">S/</span>
-                            <input id="subtotalIngresos" class="eval-subtotal eval-calculated" readonly tabindex="-1" />
+                            <input id="subtotalIngresos" class="eval-subtotal eval-calculated" readonly tabindex="-1" disabled />
                         </div>
                     </div>
                 </section>
 
-                <section class="eval-section">
+                <section class="eval-section eval-section--locked" data-etapa-bloqueo="gastos" aria-disabled="true">
                     <h2 class="eval-section-title">Gastos Familiares</h2>
 
-                    <div class="eval-row"><div class="eval-label">Vivienda / Alquiler</div><div class="eval-field eval-money"><span class="eval-currency">S/</span><input class="js-gasto" name="viviendaAlquiler" type="number" min="0" step="0.01" /></div></div>
-                    <div class="eval-row"><div class="eval-label">Alimentación</div><div class="eval-field eval-money"><span class="eval-currency">S/</span><input class="js-gasto" name="alimentacion" type="number" min="0" step="0.01" /></div></div>
-                    <div class="eval-row"><div class="eval-label">Educación</div><div class="eval-field eval-money"><span class="eval-currency">S/</span><input class="js-gasto" name="educacion" type="number" min="0" step="0.01" /></div></div>
-                    <div class="eval-row"><div class="eval-label">Transporte</div><div class="eval-field eval-money"><span class="eval-currency">S/</span><input class="js-gasto" name="transporte" type="number" min="0" step="0.01" /></div></div>
-                    <div class="eval-row"><div class="eval-label">Salud</div><div class="eval-field eval-money"><span class="eval-currency">S/</span><input class="js-gasto" name="salud" type="number" min="0" step="0.01" /></div></div>
-                    <div class="eval-row"><div class="eval-label">Servicios Públicos</div><div class="eval-field eval-money"><span class="eval-currency">S/</span><input class="js-gasto" name="serviciosPublicos" type="number" min="0" step="0.01" /></div></div>
-                    <div class="eval-row"><div class="eval-label">Recreación</div><div class="eval-field eval-money"><span class="eval-currency">S/</span><input class="js-gasto" name="recreacion" type="number" min="0" step="0.01" /></div></div>
-                    <div class="eval-row"><div class="eval-label">Otros Gastos</div><div class="eval-field eval-money"><span class="eval-currency">S/</span><input class="js-gasto" name="otrosGastos" type="number" min="0" step="0.01" /></div></div>
+                    <div class="eval-row"><div class="eval-label">Vivienda / Alquiler</div><div class="eval-field eval-money"><span class="eval-currency">S/</span><input class="js-gasto" name="viviendaAlquiler" type="number" min="0" step="0.01" disabled /></div></div>
+                    <div class="eval-row"><div class="eval-label">Alimentación</div><div class="eval-field eval-money"><span class="eval-currency">S/</span><input class="js-gasto" name="alimentacion" type="number" min="0" step="0.01" disabled /></div></div>
+                    <div class="eval-row"><div class="eval-label">Educación</div><div class="eval-field eval-money"><span class="eval-currency">S/</span><input class="js-gasto" name="educacion" type="number" min="0" step="0.01" disabled /></div></div>
+                    <div class="eval-row"><div class="eval-label">Transporte</div><div class="eval-field eval-money"><span class="eval-currency">S/</span><input class="js-gasto" name="transporte" type="number" min="0" step="0.01" disabled /></div></div>
+                    <div class="eval-row"><div class="eval-label">Salud</div><div class="eval-field eval-money"><span class="eval-currency">S/</span><input class="js-gasto" name="salud" type="number" min="0" step="0.01" disabled /></div></div>
+                    <div class="eval-row"><div class="eval-label">Servicios Públicos</div><div class="eval-field eval-money"><span class="eval-currency">S/</span><input class="js-gasto" name="serviciosPublicos" type="number" min="0" step="0.01" disabled /></div></div>
+                    <div class="eval-row"><div class="eval-label">Recreación</div><div class="eval-field eval-money"><span class="eval-currency">S/</span><input class="js-gasto" name="recreacion" type="number" min="0" step="0.01" disabled /></div></div>
+                    <div class="eval-row"><div class="eval-label">Otros Gastos</div><div class="eval-field eval-money"><span class="eval-currency">S/</span><input class="js-gasto" name="otrosGastos" type="number" min="0" step="0.01" disabled /></div></div>
                     <div class="eval-row eval-subtotal">
                         <div class="eval-label eval-subtotal">Sub Total (2)</div>
                         <div class="eval-field eval-money eval-subtotal">
                             <span class="eval-currency">S/</span>
-                            <input id="subtotalGastos" class="eval-subtotal eval-calculated" readonly tabindex="-1" />
+                            <input id="subtotalGastos" class="eval-subtotal eval-calculated" readonly tabindex="-1" disabled />
                         </div>
                     </div>
                 </section>
 
-                <section class="eval-section">
+                <section class="eval-section eval-section--locked" data-etapa-bloqueo="oficio" aria-disabled="true">
                     <h2 class="eval-section-title">Evaluación del Oficio</h2>
 
                     <div class="eval-row">
                         <div class="eval-label">Oficio</div>
-                        <div class="eval-field"><input name="oficio" /></div>
+                        <div class="eval-field"><input name="oficio" disabled /></div>
                     </div>
                     <div class="eval-row">
                         <div class="eval-label">Ingresos Estados de Cuenta</div>
                         <div class="eval-field eval-money">
                             <span class="eval-currency">S/</span>
-                            <input name="ingresoEstadoCuenta" type="number" min="0" step="0.01" />
+                            <input name="ingresoEstadoCuenta" type="number" min="0" step="0.01" disabled />
                         </div>
                     </div>
                     <div class="eval-row">
                         <div class="eval-label">Ingresos total del Oficio</div>
                         <div class="eval-field eval-money">
                             <span class="eval-currency">S/</span>
-                            <input name="ingresoTotalOficio" type="number" min="0" step="0.01" />
+                            <input name="ingresoTotalOficio" type="number" min="0" step="0.01" disabled />
                         </div>
                     </div>
                 </section>
 
-                <section class="eval-section">
+                <section class="eval-section eval-section--locked" data-etapa-bloqueo="negocio" aria-disabled="true">
                     <h2 class="eval-section-title">Evaluación del Negocio</h2>
 
                     <div class="eval-row">
                         <div class="eval-label">Rubro del Negocio</div>
-                        <div class="eval-field"><input name="rubroNegocio" /></div>
+                        <div class="eval-field"><input name="rubroNegocio" disabled /></div>
                     </div>
 
                     <div class="mt-3">
@@ -720,11 +742,11 @@
                                 </tr>
                             </thead>
                             <tbody id="productosBody">
-<tr><td><input class="product-name" data-field="producto" /></td><td><input data-field="costo" type="number" min="0" step="0.01" /></td><td><input data-field="venta" type="number" min="0" step="0.01" /></td><td><input data-field="cantidad" type="number" min="0" step="1" /></td><td><input data-field="total" readonly /></td></tr>
-<tr><td><input class="product-name" data-field="producto" /></td><td><input data-field="costo" type="number" min="0" step="0.01" /></td><td><input data-field="venta" type="number" min="0" step="0.01" /></td><td><input data-field="cantidad" type="number" min="0" step="1" /></td><td><input data-field="total" readonly /></td></tr>
-<tr><td><input class="product-name" data-field="producto" /></td><td><input data-field="costo" type="number" min="0" step="0.01" /></td><td><input data-field="venta" type="number" min="0" step="0.01" /></td><td><input data-field="cantidad" type="number" min="0" step="1" /></td><td><input data-field="total" readonly /></td></tr>
-<tr><td><input class="product-name" data-field="producto" /></td><td><input data-field="costo" type="number" min="0" step="0.01" /></td><td><input data-field="venta" type="number" min="0" step="0.01" /></td><td><input data-field="cantidad" type="number" min="0" step="1" /></td><td><input data-field="total" readonly /></td></tr>
-<tr><td><input class="product-name" data-field="producto" /></td><td><input data-field="costo" type="number" min="0" step="0.01" /></td><td><input data-field="venta" type="number" min="0" step="0.01" /></td><td><input data-field="cantidad" type="number" min="0" step="1" /></td><td><input data-field="total" readonly /></td></tr>
+<tr><td><input class="product-name" data-field="producto" disabled /></td><td><input data-field="costo" type="number" min="0" step="0.01" disabled /></td><td><input data-field="venta" type="number" min="0" step="0.01" disabled /></td><td><input data-field="cantidad" type="number" min="0" step="1" disabled /></td><td><input data-field="total" readonly disabled /></td></tr>
+<tr><td><input class="product-name" data-field="producto" disabled /></td><td><input data-field="costo" type="number" min="0" step="0.01" disabled /></td><td><input data-field="venta" type="number" min="0" step="0.01" disabled /></td><td><input data-field="cantidad" type="number" min="0" step="1" disabled /></td><td><input data-field="total" readonly disabled /></td></tr>
+<tr><td><input class="product-name" data-field="producto" disabled /></td><td><input data-field="costo" type="number" min="0" step="0.01" disabled /></td><td><input data-field="venta" type="number" min="0" step="0.01" disabled /></td><td><input data-field="cantidad" type="number" min="0" step="1" disabled /></td><td><input data-field="total" readonly disabled /></td></tr>
+<tr><td><input class="product-name" data-field="producto" disabled /></td><td><input data-field="costo" type="number" min="0" step="0.01" disabled /></td><td><input data-field="venta" type="number" min="0" step="0.01" disabled /></td><td><input data-field="cantidad" type="number" min="0" step="1" disabled /></td><td><input data-field="total" readonly disabled /></td></tr>
+<tr><td><input class="product-name" data-field="producto" disabled /></td><td><input data-field="costo" type="number" min="0" step="0.01" disabled /></td><td><input data-field="venta" type="number" min="0" step="0.01" disabled /></td><td><input data-field="cantidad" type="number" min="0" step="1" disabled /></td><td><input data-field="total" readonly disabled /></td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -733,7 +755,7 @@
                         <div class="eval-label">Total</div>
                         <div class="eval-field eval-money">
                             <span class="eval-currency">S/</span>
-                            <input id="totalProductos" class="eval-calculated" readonly tabindex="-1" />
+                            <input id="totalProductos" class="eval-calculated" readonly tabindex="-1" disabled />
                         </div>
                     </div>
 
@@ -741,15 +763,15 @@
                         <div class="eval-label">Ingresos total del Negocio</div>
                         <div class="eval-field eval-money">
                             <span class="eval-currency">S/</span>
-                            <input id="ingresoTotalNegocio" name="ingresoTotalNegocio" class="eval-total-emphasis eval-calculated" type="number" step="0.01" readonly tabindex="-1" />
+                            <input id="ingresoTotalNegocio" name="ingresoTotalNegocio" class="eval-total-emphasis eval-calculated" type="number" step="0.01" readonly tabindex="-1" disabled />
                         </div>
                     </div>
                 </section>
 
-                <section class="eval-section">
+                <section class="eval-section eval-section--locked" data-etapa-bloqueo="observaciones" aria-disabled="true">
                     <h2 class="eval-section-title">Observaciones</h2>
                     <div class="eval-field">
-                        <textarea name="observaciones" placeholder="Ingrese observaciones relevantes de la evaluación..."></textarea>
+                        <textarea name="observaciones" placeholder="Ingrese observaciones relevantes de la evaluación..." disabled></textarea>
                     </div>
                 </section>
 
@@ -759,7 +781,7 @@
                 </div>
 
                 <div class="eval-note">
-                    Formulario interno conectado a la persistencia controlada de AtencionDigital.
+                    Formulario externo conectado al registro controlado de AtencionDigital.
                 </div>
             </div>
         </div>
@@ -791,6 +813,7 @@
   </div>
 </div>
 </div>
+<script src="./evaluacion-bloqueos.js"></script>
 <script>
 document.addEventListener("DOMContentLoaded", function () {
     var form = document.getElementById("evaluacionEconomicaForm");
@@ -864,7 +887,27 @@ document.addEventListener("DOMContentLoaded", function () {
 
     var registroConfig = null;
     var envioPendiente = null;
+    var guardando = false;
     var aviso = document.getElementById("estadoGuardadoDemo");
+    var bloqueos = window.ATDEvaluacionBloqueos;
+
+    // Guardar requiere dos condiciones independientes: formulario completo
+    // y backend SQL habilitado. Una nunca sustituye a la otra.
+    function sincronizarGuardar() {
+        boton.disabled = guardando || !registroConfig ||
+            !bloqueos || !bloqueos.evaluarEstado(form).puedeGuardar;
+    }
+
+    // El marcado inicial ya tiene los controles disabled: un fallo al cargar
+    // el JS mantiene el bloqueo y no habilita Guardar a ciegas.
+    if (bloqueos) {
+        bloqueos.inicializar(form);
+        form.addEventListener("input", sincronizarGuardar);
+        form.addEventListener("change", sincronizarGuardar);
+        form.addEventListener("reset", function () {
+            setTimeout(sincronizarGuardar, 0);
+        });
+    }
 
     async function habilitarSiDisponible() {
         if (comprobar) { comprobar.disabled = true; comprobar.textContent = "Comprobando..."; }
@@ -873,14 +916,14 @@ document.addEventListener("DOMContentLoaded", function () {
             if (!response.ok) throw new Error("API no disponible");
             const config = await response.json();
             registroConfig = config && config.registroHabilitado && config.credencialesRequeridas === false && config.campaign_id ? config : null;
-            boton.disabled = !registroConfig;
+            sincronizarGuardar();
             boton.textContent = registroConfig ? "Guardar respuesta" : "Guardar respuesta (servicio no disponible)";
             if (aviso) aviso.textContent = registroConfig
                 ? "El formulario está listo para registrar una respuesta sin credenciales."
                 : "El registro real sigue deshabilitado hasta configurar y desplegar los servicios.";
         } catch (_) {
-            boton.disabled = true;
             registroConfig = null;
+            sincronizarGuardar();
             boton.textContent = "Guardar respuesta (servicio no disponible)";
             if (aviso) aviso.textContent = "No se pudo verificar el estado del servicio de registro.";
         } finally {
@@ -939,7 +982,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
     form.addEventListener("submit", async function (event) {
         event.preventDefault();
-        if (boton.disabled || !registroConfig) return;
+        if (guardando || !registroConfig || !bloqueos ||
+            !bloqueos.evaluarEstado(form).puedeGuardar || boton.disabled) return;
         let evaluacion;
         try {
             evaluacion = construirEvaluacion();
@@ -951,7 +995,8 @@ document.addEventListener("DOMContentLoaded", function () {
         if (!envioPendiente || envioPendiente.fingerprint !== fingerprint) {
             envioPendiente = {fingerprint: fingerprint, submission_id: crypto.randomUUID()};
         }
-        boton.disabled = true;
+        guardando = true;
+        sincronizarGuardar();
         boton.textContent = "Registrando...";
         if (aviso) aviso.textContent = "Solicitando confirmación de SQL Server...";
         try {
@@ -985,7 +1030,8 @@ document.addEventListener("DOMContentLoaded", function () {
             if (aviso) aviso.textContent = "No se confirmó el registro: " + error.message +
                 ". Si reintentas sin cambiar los datos, se usará el mismo identificador.";
         } finally {
-            boton.disabled = !registroConfig;
+            guardando = false;
+            sincronizarGuardar();
             boton.textContent = registroConfig ? "Guardar respuesta" : "Guardar respuesta (servicio no disponible)";
         }
     });

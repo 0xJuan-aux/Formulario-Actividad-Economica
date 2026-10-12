@@ -39,7 +39,8 @@ jobs:
           assert "clavePruebaRegistro" not in html, "La encuesta no debe pedir clave"
           assert "X-ATD-Form-Test-Key" not in html, "No se permite clave del piloto en Pages"
 
-          scripts = re.findall(r"<script\b[^>]*>(.*?)</script\s*>", html, re.I | re.S)
+          entries = re.findall(r"<script\b([^>]*)>(.*?)</script\s*>", html, re.I | re.S)
+          scripts = [body for attrs, body in entries if not re.search(r"\bsrc\s*=", attrs, re.I)]
           assert scripts, "No hay scripts inline"
           for i, script in enumerate(scripts):
               path = pathlib.Path(f"/tmp/encuesta_{i}.js")

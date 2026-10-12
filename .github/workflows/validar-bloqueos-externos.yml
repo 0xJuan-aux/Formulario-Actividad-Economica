@@ -1,0 +1,36 @@
+name: Validar bloqueos y guardado externo
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - index.html
+      - evaluacion-bloqueos.js
+      - tests/evaluacion-bloqueos.test.cjs
+      - .github/workflows/validar-bloqueos-externos.yml
+  push:
+    branches: [main]
+    paths:
+      - index.html
+      - evaluacion-bloqueos.js
+      - tests/evaluacion-bloqueos.test.cjs
+      - .github/workflows/validar-bloqueos-externos.yml
+
+permissions:
+  contents: read
+
+jobs:
+  validar-formulario-externo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verificar sintaxis
+        run: |
+          node --check evaluacion-bloqueos.js
+          node --check tests/evaluacion-bloqueos.test.cjs
+      - name: Ejecutar pruebas unitarias y de registro simulado
+        run: node --test tests/evaluacion-bloqueos.test.cjs
