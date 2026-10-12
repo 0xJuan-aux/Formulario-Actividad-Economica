@@ -1,11 +1,11 @@
-/* Evaluación Económica interna: desbloqueo progresivo de secciones.
+/* Evaluación Económica (formulario externo): mismo desbloqueo aprobado en intranet.
  * Etapa 1: los cuatro datos del ejecutivo -> Información del cliente.
  * Etapa 2: los 7 datos del cliente -> Ingresos familiares.
  * Etapa 3: pensiones, rentas y otros ingresos -> Gastos familiares.
  * Etapa 4: los 8 gastos -> Evaluación del Oficio.
  * Etapa 5: los 3 datos del oficio -> Negocio, Observaciones y Guardar.
  * Los campos del negocio son opcionales (no todos los clientes tienen negocio).
- * Este archivo NO se utiliza en el formulario externo de GitHub Pages.
+ * No modifica el controlador IIS ni las validaciones del servidor Render.
  */
 (function (root) {
     "use strict";
