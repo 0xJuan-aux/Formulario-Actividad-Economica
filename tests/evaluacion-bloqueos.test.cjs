@@ -218,7 +218,8 @@ function simularNavegador(configHabilitada) {
     return {form,boton,comprobar,aviso,tabRegistro,confirmacion,sections,calls,enviar,activar};
 }
 async function completarConfig(){
-    await Promise.resolve();await Promise.resolve();await Promise.resolve();await Promise.resolve();
+    // Esperar a que la respuesta simulada del backend termine de procesarse.
+    await new Promise(resolve => setImmediate(resolve));
 }
 test("un servidor habilitado NO habilita Guardar antes de completar la cadena",async()=>{
     const browser=simularNavegador(true);
