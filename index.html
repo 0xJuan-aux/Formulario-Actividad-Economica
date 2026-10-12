@@ -1077,15 +1077,6 @@ const columnasRegistro = [
   ['iEstado','Estado']
 ];
 const clavesPublicasRegistro = new Set(['iCod_Evaluacion','iPersonas_Cargo','vTipo_Trabajo','nOtros_Ingresos']);
-const linkGestionInterna = 'http://192.168.88.24:8080/Cobranzas/EvaluacionEconomica';
-// La edición requiere sesión autorizada en la intranet. El formulario público
-// solo transmite el código, sin descargar columnas privadas ni efectuar UPDATE.
-function generarEnlaceEdicionInterna(codigo) {
-  const id = Number(codigo);
-  if (!Number.isSafeInteger(id) || id <= 0) return linkGestionInterna + '#registro';
-  return linkGestionInterna + '?editarEvaluacion=' +
-    encodeURIComponent(String(id)) + '#registro';
-}
 let mostrarEstructuraCompleta = true;
 let registrosPublicos = [];
 let filtrosRegistro = {};
@@ -1143,15 +1134,19 @@ function aplicarFiltrosYOrdenRegistro() {
     });
     const celdaAccion=document.createElement('td');
     celdaAccion.className='eval-action-cell';
-    const enlace=document.createElement('a');
-    enlace.className='eval-edit-btn';
-    enlace.href=generarEnlaceEdicionInterna(record.iCod_Evaluacion);
-    enlace.target='_blank';
-    enlace.rel='noopener noreferrer';
-    enlace.textContent='✎';
-    enlace.title='Editar la evaluación ' + String(record.iCod_Evaluacion) + ' en la intranet autorizada';
-    enlace.setAttribute('aria-label','Editar evaluación ' + String(record.iCod_Evaluacion) + ' en la intranet');
-    celdaAccion.appendChild(enlace);tr.appendChild(celdaAccion);
+    const lapiz=document.createElement('button');
+    lapiz.type='button';
+    lapiz.className='eval-edit-btn';
+    lapiz.textContent='✎';
+    lapiz.title='Editar esta evaluación en la tabla (requiere autorización externa)';
+    lapiz.setAttribute('aria-label','Editar evaluación ' + String(record.iCod_Evaluacion));
+    lapiz.addEventListener('click',()=>{
+      // No abrir una dirección interna desde una página pública.
+      // La API actual solo permite UPDATE privado: no eludir esa protección.
+      const aviso=document.getElementById('demoStatus');
+      if(aviso) aviso.textContent='La edición directa necesita autorización administrativa en el formulario externo. El registro de nuevas evaluaciones sigue disponible.';
+    });
+    celdaAccion.appendChild(lapiz);tr.appendChild(celdaAccion);
     tbody.appendChild(tr);
   });
 }
