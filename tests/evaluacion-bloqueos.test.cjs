@@ -16,7 +16,7 @@ const OTROS = ["rubroNegocio", "observaciones", "ingresoTotalNegocio"];
 const ALL = [...EJECUTIVO, ...CLIENTE, ...INGRESOS, ...GASTOS, ...OFICIO, ...OTROS];
 
 function fakeForm() {
-    const elements = Object.fromEntries(ALL.map(name => [name, {name, value: "", validity: {valid: true}}]));
+    const elements = Object.fromEntries(ALL.map(name => [name, {name, value: "", validity: {valid: true}, addEventListener() {}}]));
     return {elements};
 }
 function completar(form, names, value="0") {
