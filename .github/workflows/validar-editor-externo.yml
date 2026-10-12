@@ -1,0 +1,26 @@
+name: Validate exclusive editor without affecting INSERT
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - index.html
+      - editor-evaluacion.js
+      - tests/editor-evaluacion.test.cjs
+      - .github/workflows/validar-editor-externo.yml
+permissions:
+  contents: read
+jobs:
+  frontend-editor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate JavaScript syntax
+        run: node --check editor-evaluacion.js
+      - name: Unit tests for editor
+        run: node --test tests/editor-evaluacion.test.cjs
+      - name: Regression - public INSERT without business details
+        run: node --test tests/evaluacion-bloqueos.test.cjs
