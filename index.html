@@ -1077,7 +1077,15 @@ const columnasRegistro = [
   ['iEstado','Estado']
 ];
 const clavesPublicasRegistro = new Set(['iCod_Evaluacion','iPersonas_Cargo','vTipo_Trabajo','nOtros_Ingresos']);
-const linkGestionInterna = 'http://192.168.88.24:8080/Cobranzas/EvaluacionEconomica#registro';
+const linkGestionInterna = 'http://192.168.88.24:8080/Cobranzas/EvaluacionEconomica';
+// La edición requiere sesión autorizada en la intranet. El formulario público
+// solo transmite el código, sin descargar columnas privadas ni efectuar UPDATE.
+function generarEnlaceEdicionInterna(codigo) {
+  const id = Number(codigo);
+  if (!Number.isSafeInteger(id) || id <= 0) return linkGestionInterna + '#registro';
+  return linkGestionInterna + '?editarEvaluacion=' +
+    encodeURIComponent(String(id)) + '#registro';
+}
 let mostrarEstructuraCompleta = true;
 let registrosPublicos = [];
 let filtrosRegistro = {};
@@ -1137,12 +1145,12 @@ function aplicarFiltrosYOrdenRegistro() {
     celdaAccion.className='eval-action-cell';
     const enlace=document.createElement('a');
     enlace.className='eval-edit-btn';
-    enlace.href=linkGestionInterna;
+    enlace.href=generarEnlaceEdicionInterna(record.iCod_Evaluacion);
     enlace.target='_blank';
     enlace.rel='noopener noreferrer';
     enlace.textContent='✎';
-    enlace.title='Abrir intranet para gestionar registros con sesión autorizada';
-    enlace.setAttribute('aria-label','Abrir registro interno autorizado');
+    enlace.title='Editar la evaluación ' + String(record.iCod_Evaluacion) + ' en la intranet autorizada';
+    enlace.setAttribute('aria-label','Editar evaluación ' + String(record.iCod_Evaluacion) + ' en la intranet');
     celdaAccion.appendChild(enlace);tr.appendChild(celdaAccion);
     tbody.appendChild(tr);
   });
