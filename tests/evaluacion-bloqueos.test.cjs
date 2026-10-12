@@ -279,3 +279,32 @@ test("al borrar un campo obligatorio, Guardar se vuelve a bloquear aunque el ser
     await browser.enviar();
     assert.equal(browser.calls.filter(c=>c.url.endsWith("/registrar")).length,0);
 });
+
+test("el lápiz externo abre la edición interna del código seleccionado, sin eliminar Guardar", () => {
+    const match = html.match(/function generarEnlaceEdicionInterna\(codigo\) \{[\s\S]*?\n\}/);
+    assert.ok(match, "Debe existir un constructor de enlace a la intranet");
+    const generar = vm.runInNewContext(
+        "const linkGestionInterna='http://192.168.88.24:8080/Cobranzas/EvaluacionEconomica';\n" +
+        match[0] + "\ngenerarEnlaceEdicionInterna",
+        {}
+    );
+
+    assert.equal(
+        generar(1234),
+        "http://192.168.88.24:8080/Cobranzas/EvaluacionEconomica?editarEvaluacion=1234#registro"
+    );
+    assert.equal(
+        generar("13"),
+        "http://192.168.88.24:8080/Cobranzas/EvaluacionEconomica?editarEvaluacion=13#registro"
+    );
+    assert.equal(
+        generar("texto"),
+        "http://192.168.88.24:8080/Cobranzas/EvaluacionEconomica#registro"
+    );
+    assert.match(html, /enlace\.href=generarEnlaceEdicionInterna\(record\.iCod_Evaluacion\)/);
+    assert.match(html, /enlace\.target='_blank'/);
+    assert.match(html, /enlace\.rel='noopener noreferrer'/);
+    assert.match(html, /id="btnGuardarEvaluacion"/);
+    assert.match(html, /"https:\/\/atd-relay\.onrender\.com\/api\/actividad-economica\/registrar"/);
+    assert.match(html, /submission_id: envioPendiente\.submission_id/);
+});
