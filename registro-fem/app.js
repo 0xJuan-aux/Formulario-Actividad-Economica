@@ -7,7 +7,6 @@
   const ecc = document.getElementById("vECC");
   const documentInput = document.getElementById("vNro_doc");
   const comment = document.getElementById("vComentario");
-  const eccList = document.getElementById("eccList");
   const docList = document.getElementById("docList");
   const docItems = document.getElementById("documentItems");
   const docCount = document.getElementById("docCount");
@@ -100,15 +99,26 @@
     container.replaceChildren(fragment);
   }
 
-  async function getJSON(url, signal) {
-    const response = await fetch(url, {
-      method: "GET", credentials: "include", cache: "no-store",
-      headers: { Accept: "application/json" }, signal
+  // Se llama SOLO al proxy HTTPS autenticado. Nunca a la URL firmada de Power Automate.
+  // El proxy conserva la firma como secreto y devuelve el contrato SQL ResultSets.Table1.
+  async function queryCatalog(requestBody, signal) {
+    const response = await fetch(catalogUrl, {
+      method: "POST",
+      credentials: "include",
+      cache: "no-store",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
+      body: JSON.stringify(requestBody),
+      signal
     });
     const body = await response.json().catch(() => null);
-    if (!response.ok || !body || body.bResultado !== true)
-      throw new Error(body?.vMensaje || "No se pudo consultar el catálogo autorizado.");
-    return body;
+    if (!response.ok || !body || body.bResultado === false)
+      throw new Error("No se pudo consultar el catálogo autorizado.");
+    if (!Array.isArray(body?.ResultSets?.Table1))
+      throw new Error("Formato de respuesta SQL inesperado.");
+    return body.ResultSets.Table1;
   }
 
   function documentEmpty(message) {
@@ -159,42 +169,49 @@
   }
 
   async function loadDocs(first = true) {
-    if (!catalogUrl || !ecc.value.trim()) return;
+    const selectedECC = ecc.value.trim();
+    if (!catalogUrl || !selectedECC) return;
     const version = ++requestVersion;
     if (first) {
       queryAbort?.abort();
       queryAbort = new AbortController();
       docsAfter = "";
       docLoaded = 0;
-      documentEmpty("Consultando documentos...");
+      documentEmpty("Consultando documentos del ECC seleccionado...");
     } else if (!hasMore) return;
 
     loadMore.disabled = true;
-    const params = new URLSearchParams({
-      tipo: "documentos", vECC: ecc.value.trim()
-    });
-    if (first && documentInput.value.trim()) params.set("buscar", documentInput.value.trim().slice(0, 40));
-    if (!first && docsAfter) params.set("despues", docsAfter);
     docsMessage.textContent = "Consultando documentos...";
-    try {
-      const data = await getJSON(catalogUrl + (catalogUrl.includes("?") ? "&" : "?") + params, queryAbort.signal);
-      if (version !== requestVersion) return;
-      if (!Array.isArray(data.documentos) || typeof data.hayMas !== "boolean")
-        throw new Error("El catálogo no devolvió una lista válida.");
+    const requestBody = {
+      vCodigo: "LISTA_ECC_FAME_COB",
+      vModo: "DOCUMENTOS",
+      vECC: selectedECC,
+      iLimite: maxPage + 1
+    };
+    if (first && documentInput.value.trim())
+      requestBody.vBuscar = documentInput.value.trim().slice(0, 40);
+    if (!first && docsAfter) requestBody.vDespues = docsAfter;
 
-      const numbers = data.documentos.filter(s => typeof s === "string");
-      hasMore = data.hayMas;
-      docsAfter = typeof data.siguiente === "string" ? data.siguiente : "";
-      docLoaded += numbers.length;
-      if (numbers.length) displayDocs(numbers, !first);
-      else if (first) documentEmpty("No se encontraron documentos para ese vECC.");
-      docCount.textContent = numberFormat.format(docLoaded) + (hasMore ? "+ cargados" : " cargados");
+    try {
+      const rows = await queryCatalog(requestBody, queryAbort.signal);
+      if (version !== requestVersion || ecc.value.trim() !== selectedECC) return;
+      const numbers = rows
+        .map(row => typeof row?.vNro_doc === "string" ? row.vNro_doc.trim() : "")
+        .filter(Boolean);
+      const page = numbers.slice(0, maxPage);
+      hasMore = numbers.length > maxPage;
+      docsAfter = page.length ? page[page.length - 1] : "";
+      docLoaded += page.length;
+      if (page.length) displayDocs(page, !first);
+      else if (first) documentEmpty("No se encontraron documentos para este ECC.");
+      docCount.textContent = numberFormat.format(docLoaded) +
+        (hasMore ? "+ cargados" : " cargados");
       loadMore.hidden = !hasMore;
       docsMessage.textContent = hasMore ? "Puedes cargar más documentos." : "";
-    } catch(error) {
+    } catch (error) {
       if (error?.name === "AbortError" || version !== requestVersion) return;
-      docsMessage.textContent = "No se pudo obtener la lista de documentos.";
-      if (first) documentEmpty("El catálogo externo no está disponible. Puedes ingresar el documento manualmente.");
+      docsMessage.textContent = "No se pudo consultar la lista de documentos.";
+      if (first) documentEmpty("La consulta autorizada de documentos no está disponible.");
       loadMore.hidden = true;
     } finally {
       if (version === requestVersion) loadMore.disabled = false;
@@ -202,20 +219,46 @@
   }
 
   async function loadEcc() {
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = "Selecciona un ECC";
+    ecc.replaceChildren(placeholder);
+    ecc.disabled = true;
     if (!catalogUrl) {
-      eccHelp.textContent = "Catálogo externo no conectado. Puedes escribir vECC; la API deberá validar su pertenencia antes de guardar.";
+      placeholder.textContent = "Catálogo ECC pendiente de conexión";
+      eccHelp.textContent = "El ComboBox está listo. Falta conectar una API segura; no se publicará la URL firmada de Power Automate.";
       return;
     }
+    placeholder.textContent = "Cargando ECC...";
     eccHelp.textContent = "Consultando cabeceras ECC autorizadas...";
     try {
-      const data = await getJSON(catalogUrl + (catalogUrl.includes("?") ? "&" : "?") + "tipo=ecc");
-      if (!Array.isArray(data.valores)) throw new Error("Catálogo ECC inválido.");
-      fillOptions(eccList, data.valores);
-      eccHelp.textContent = data.valores.length
-        ? "Selecciona una de las cabeceras disponibles."
-        : "No hay cabeceras disponibles para el filtro de afectación.";
+      const rows = await queryCatalog({
+        vCodigo: "LISTA_ECC_FAME_COB",
+        vModo: "ECC",
+        iLimite: 500
+      });
+      const unique = [...new Set(rows
+        .map(row => typeof row?.vECC === "string" ? row.vECC.trim() : "")
+        .filter(Boolean))];
+      unique.forEach(value => {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = value;
+        ecc.appendChild(option);
+      });
+      if (!unique.length) {
+        placeholder.textContent = "No hay ECC disponibles";
+        eccHelp.textContent = "La consulta no devolvió cabeceras ECC.";
+        return;
+      }
+      placeholder.textContent = "Selecciona un ECC de la lista";
+      ecc.disabled = false;
+      eccHelp.textContent = "Se cargaron " + numberFormat.format(unique.length) +
+        " cabeceras autorizadas. Elige una para consultar sus documentos." +
+        (rows.length >= 500 ? " La respuesta podría estar limitada a las primeras 500." : "");
     } catch {
-      eccHelp.textContent = "No fue posible consultar las cabeceras. Puedes escribir el valor manualmente.";
+      placeholder.textContent = "No fue posible cargar los ECC";
+      eccHelp.textContent = "Error al consultar ECC. Revisa la conexión del proxy autorizado.";
     }
   }
 
@@ -228,7 +271,7 @@
     }
   }
 
-  ecc.addEventListener("input", () => {
+  ecc.addEventListener("change", () => {
     documentInput.value = "";
     resetDocs(catalogUrl ? "Selecciona un vECC para consultar sus documentos." : "Catálogo de documentos pendiente de conexión.");
     refreshChanged();
