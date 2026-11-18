@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="description" content="Formulario externo de Registro FEM de Cobranzas.">
+  <title>Registro FEM | AtencionDigital</title>
+  <link rel="stylesheet" href="./styles.css">
+  <script defer src="./config.js"></script>
+  <script defer src="./app.js"></script>
+</head>
+<body>
+  <div class="top-line" aria-hidden="true"></div>
+  <header class="site-header">
+    <div class="header-wrap">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none"><rect x="5.5" y="3" width="13" height="18" rx="2.2"/><path d="M9 8h6m-6 4h6m-6 4h4"/></svg>
+        </span>
+        <div><strong>AtencionDigital</strong><span>COBRANZAS</span></div>
+      </div>
+      <span class="header-label">Formulario externo</span>
+    </div>
+  </header>
+
+  <main class="main">
+    <section class="intro" aria-labelledby="pageTitle">
+      <div>
+        <p class="eyebrow">COBRANZAS / FORMULARIOS</p>
+        <h1 id="pageTitle">Registro FEM</h1>
+        <p class="subtitle">Registra la evaluación de afectación y sus observaciones.</p>
+      </div>
+      <div class="form-id" title="Código de enrutamiento de Power Automate">
+        <span>Código del formulario</span><strong>REGIS_FAME_COB</strong>
+      </div>
+    </section>
+
+    <div class="progress-guide" aria-label="Pasos del formulario">
+      <div><span class="step-number">1</span><span>Selecciona la cabecera</span></div>
+      <div><span class="step-number">2</span><span>Identifica el documento</span></div>
+      <div><span class="step-number">3</span><span>Registra la afectación</span></div>
+    </div>
+
+    <form id="femForm" novalidate>
+      <div class="form-grid">
+        <div class="column">
+          <section class="panel" aria-labelledby="eccHeading">
+            <div class="panel-head">
+              <span class="panel-icon" aria-hidden="true">01</span>
+              <div><h2 id="eccHeading">Seleccionar cabecera ECC</h2><p>Selecciona o escribe el valor de <code>vECC</code>.</p></div>
+            </div>
+            <label for="vECC" class="field-label">vECC <span class="required">*</span></label>
+            <input id="vECC" name="vECC" list="eccList" maxlength="250" autocomplete="off"
+                   placeholder="Escribe o busca una cabecera ECC" required>
+            <datalist id="eccList"></datalist>
+            <p class="helper" id="eccHelp">Los valores se podrán consultar automáticamente cuando se conecte el catálogo externo.</p>
+          </section>
+
+          <section class="panel panel-docs" aria-labelledby="docsHeading">
+            <div class="panel-head">
+              <span class="panel-icon" aria-hidden="true">02</span>
+              <div><h2 id="docsHeading">Seleccionar documento</h2><p>Documento asociado al vECC.</p></div>
+            </div>
+            <label for="vNro_doc" class="field-label">vNro_doc <span class="required">*</span></label>
+            <input id="vNro_doc" name="vNro_doc" list="docList" maxlength="40" autocomplete="off"
+                   placeholder="Escribe o busca el número de documento" required>
+            <datalist id="docList"></datalist>
+            <div class="list-top"><strong>Documentos disponibles</strong><span class="counter" id="docCount">0 cargados</span></div>
+            <div class="document-items" id="documentItems" aria-live="polite">
+              <p class="empty-state" id="docsEmpty">La consulta externa de documentos aún no está conectada. Puedes preparar el formulario ingresando un documento manualmente.</p>
+            </div>
+            <div class="list-footer">
+              <button type="button" class="btn-secondary" id="loadMore" hidden>Cargar más documentos</button>
+              <p id="docsMessage" class="helper" role="status"></p>
+            </div>
+          </section>
+        </div>
+
+        <div class="column">
+          <section class="panel" aria-labelledby="stateHeading">
+            <div class="panel-head">
+              <span class="panel-icon" aria-hidden="true">03</span>
+              <div><h2 id="stateHeading">Estado de afectación</h2><p>Elige una sola opción.</p></div>
+            </div>
+            <fieldset class="radio-fieldset">
+              <legend class="field-label">Condición del cliente <span class="required">*</span></legend>
+              <div class="state-options">
+                <label class="state-option">
+                  <input type="radio" name="vEstado_Afectacion" value="Afectado">
+                  <span class="radio-text"><strong>Afectado</strong><small>Cliente reporta afectación</small></span>
+                </label>
+                <label class="state-option">
+                  <input type="radio" name="vEstado_Afectacion" value="No Afectado">
+                  <span class="radio-text"><strong>No Afectado</strong><small>Cliente no reporta afectación</small></span>
+                </label>
+              </div>
+            </fieldset>
+          </section>
+
+          <section class="panel panel-comment" aria-labelledby="commentHeading">
+            <div class="panel-head">
+              <span class="panel-icon" aria-hidden="true">04</span>
+              <div><h2 id="commentHeading">Agregar comentario</h2><p>Detalla las observaciones del registro.</p></div>
+            </div>
+            <label for="vComentario" class="field-label">Comentario <span class="optional">(opcional)</span></label>
+            <textarea id="vComentario" name="vComentario" maxlength="2000" rows="8"
+                      placeholder="Escribe el comentario correspondiente..."></textarea>
+            <div class="character-count"><span id="charCount">0</span> / 2000 caracteres</div>
+            <div class="save-area">
+              <div class="save-message" id="saveMessage" role="status" aria-live="polite">
+                <span class="status-dot" aria-hidden="true"></span>
+                <span id="saveText">La integración externa segura está pendiente. El diseño está disponible.</span>
+              </div>
+              <button class="btn-primary" id="saveButton" type="submit" disabled>
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 3h12l2 2v16H5zM8 3v7h8V3M8 21v-8h8v8" /></svg>
+                <span id="saveLabel">Guardar</span>
+              </button>
+            </div>
+          </section>
+        </div>
+      </div>
+    </form>
+
+    <footer class="footer">
+      <span>AtencionDigital · Cobranzas · Registro FEM</span>
+      <span>Los datos no se almacenan en GitHub Pages.</span>
+    </footer>
+  </main>
+</body>
+</html>
