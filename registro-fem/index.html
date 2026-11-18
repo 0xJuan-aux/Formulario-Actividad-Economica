@@ -36,6 +36,22 @@
       </div>
     </section>
 
+    <section class="auth-panel" aria-labelledby="femAuthHeading">
+      <div class="auth-copy">
+        <div class="auth-title"><span class="auth-symbol" aria-hidden="true">🔒</span><h2 id="femAuthHeading">Acceso al catálogo FEM</h2></div>
+        <p>El formulario es público; las listas ECC y DNI requieren una cuenta autorizada para proteger los datos de clientes.</p>
+      </div>
+      <form id="femAuthForm" class="auth-form" autocomplete="on">
+        <label class="sr-only" for="femUsuario">Usuario</label>
+        <input id="femUsuario" name="usuario" type="text" autocomplete="username" required maxlength="64" placeholder="Usuario de consulta">
+        <label class="sr-only" for="femClave">Contraseña</label>
+        <input id="femClave" name="contrasena" type="password" autocomplete="current-password" required maxlength="256" placeholder="Contraseña">
+        <button type="submit" id="femLoginBtn" class="btn-auth">Acceder</button>
+      </form>
+      <button type="button" id="femLogoutBtn" class="btn-secondary" hidden>Cerrar sesión</button>
+      <p id="femAuthStatus" class="auth-status" role="status" aria-live="polite">Configura una cuenta autorizada para consultar el catálogo.</p>
+    </section>
+
     <div class="progress-guide" aria-label="Pasos del formulario">
       <div><span class="step-number">1</span><span>Selecciona la cabecera</span></div>
       <div><span class="step-number">2</span><span>Identifica el documento</span></div>
