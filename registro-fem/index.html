@@ -48,13 +48,13 @@
           <section class="panel" aria-labelledby="eccHeading">
             <div class="panel-head">
               <span class="panel-icon" aria-hidden="true">01</span>
-              <div><h2 id="eccHeading">Seleccionar cabecera ECC</h2><p>Selecciona o escribe el valor de <code>vECC</code>.</p></div>
+              <div><h2 id="eccHeading">Seleccionar cabecera ECC</h2><p>Elige una cabecera del catálogo autorizado.</p></div>
             </div>
             <label for="vECC" class="field-label">vECC <span class="required">*</span></label>
-            <input id="vECC" name="vECC" list="eccList" maxlength="250" autocomplete="off"
-                   placeholder="Escribe o busca una cabecera ECC" required>
-            <datalist id="eccList"></datalist>
-            <p class="helper" id="eccHelp">Los valores se podrán consultar automáticamente cuando se conecte el catálogo externo.</p>
+            <select id="vECC" name="vECC" required disabled aria-describedby="eccHelp">
+              <option value="">Catálogo ECC pendiente de conexión</option>
+            </select>
+            <p class="helper" id="eccHelp" role="status" aria-live="polite">El ComboBox cargará automáticamente los ECC desde el catálogo autorizado.</p>
           </section>
 
           <section class="panel panel-docs" aria-labelledby="docsHeading">
