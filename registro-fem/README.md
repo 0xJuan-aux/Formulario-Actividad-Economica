@@ -49,19 +49,19 @@ GitHub Pages aloja HTML, CSS y JavaScript públicos: **no se puede ocultar allí
 
 - El desencadenador Power Automate visto en el diseño permite `Cualquiera`; **no enviarlo ni pegarlo en `config.js` ni en ninguna URL de navegador**. Configurar acceso autenticado donde sea viable; no interpretar el código `REGIS_FAME_COB` como secreto.
 - Exponer una **API intermedia segura HTTPS** con autorización, controles anti-abuso, validaciones de los campos y autenticación del usuario. Guardar la URL del flujo de Power Automate únicamente en variables/secrets del servidor de esa API.
-- En `config.js`, configurar solamente la URL pública del **proxy autorizado**, por ejemplo `https://<dominio-del-proxy>/api/fem/guardar`; el ejemplo es una forma de URL, no un servicio desplegado.
+- El `config.js` público apunta a `https://atd-relay.onrender.com/api/fem/login` y `/api/fem/catalogo`; son rutas del proxy seguro, sin firmas ni claves. La autenticación se configura exclusivamente en Render.
 - El endpoint `catalogUrl` también debe requerir autorización antes de devolver cabeceras y documentos. No poner listas reales de DNI en el repositorio.
 - CORS no constituye autenticación. Si se usa sesión/cookie, exigir protección CSRF y cookies seguras; de lo contrario usar un flujo de identidad autenticado adecuado al proxy.
 - Nunca escribir datos personales o respuestas SQL en GitHub, logs de consola ni almacenamiento del navegador.
 
-El guardado permanece **deshabilitado** hasta configurar `apiUrl` en `config.js` apuntando a un proxy seguro. El `vECC` y `vNro_doc` se pueden escribir para previsualización, pero su validación definitiva debe ser de servidor.
+El guardado permanece **deshabilitado** hasta implementar un endpoint de escritura independiente y autenticado. El campo `vECC` es un ComboBox que solo se habilita después de iniciar sesión y recibir el catálogo autorizado; los DNI siguen siendo privados.
 
 ## Archivos
 
 - `index.html`: diseño y controles accesibles.
 - `styles.css`: tema AtencionDigital y adaptación móvil.
 - `app.js`: validaciones cliente, consulta opcional de catálogos, envío idempotente y confirmación real.
-- `config.js`: contiene solo direcciones **públicas no secretas** de proxy/catálogo, inicialmente vacías.
+- `config.js`: contiene solo las rutas HTTPS públicas del proxy ATD-Relay (`/api/fem/login` y `/api/fem/catalogo`) y `apiUrl` vacío para no habilitar escrituras.
 
 ## Estado
 
@@ -113,3 +113,11 @@ En modo `DOCUMENTOS`, `Table1` trae `vNro_doc` como texto. La interfaz carga 150
 
 **Pendiente:** aprovisionar y configurar la API intermedia HTTPS autenticada, guardar la URL firmada de Power Automate como secreto en el servidor, autorizar acceso por usuario, definir CORS para GitHub Pages y cargar el `catalogUrl` público sin firma. El formulario público **no** debe divulgar nombres de clientes ni DNI sin permisos adecuados. Hasta ese momento el ComboBox queda deshabilitado. El código `LISTA_ECC_FAME_COB` no es una credencial.
 
+
+## Integración a ATD-Relay — 18/11/2026
+
+La página dispone de formulario de autenticación independiente; se puede abrir sin login, pero **los ECC/DNI exigen sesión verificada**. El navegador envía usuario y clave al backend Render, recibe un token de 20 minutos que permanece solo en memoria, y consulta `/api/fem/catalogo` pasando `vCodigo=LISTA_ECC_FAME_COB` y `vModo=ECC` o `DOCUMENTOS`. El proxy llama a Power Automate con la URL firmada guardada **solo** en `ATD_FEM_FLOW_URL` del servidor.
+
+La URL firmada que el usuario compartió está ausente de este repositorio. Para activar la conexión, configurar en Render las cuatro variables `ATD_FEM_ENABLED`, `ATD_FEM_FLOW_URL`, `ATD_FEM_USERS_JSON`, `ATD_FEM_SESSION_KEY`; ver instrucciones en el repo privado ATD-Relay: `docs/registro-fem-powerautomate.md`.
+
+**Estado:** código del frontend/backend enlazado en GitHub. Falta confirmar el desplegado real del backend y sus variables privadas; no declarar resultados ECC visibles hasta pasar prueba con usuario autorizado. Guardar continúa deshabilitado.
