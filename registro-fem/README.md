@@ -21,7 +21,7 @@ El formulario genera un UUID nuevo para cada envío y reutiliza el mismo UUID al
 
 `vCodigo` sirve **para el Switch**, no para autenticar.
 
-En el caso `REGIS_FAME_COB`, el flujo debe validar formato, integridad y pertenencia de `vECC` y `vNro_doc` frente al origen `DB_CRE_BI.dbo.vw_reporte_diario_operacion` con `vAfectacion='Si'`. Esta validación **no está dentro** del SP.
+En el caso `REGIS_FAME_COB`, el flujo debe validar formato, integridad y pertenencia de `vECC` y `vNro_doc` frente al origen `DB_CRE_BI.dbo.vw_reporte_diario_operacion` con `vAfectacion='Si'` y `u_CodGes_call IN ('SC','SG')`. Esta validación **no está dentro** del SP.
 
 El paso SQL Server llama:
 `DB_MAESTRO_BI.frm.SP_COB_Registro_FEM_Registrar`
