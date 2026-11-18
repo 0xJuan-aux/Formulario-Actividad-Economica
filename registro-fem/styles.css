@@ -94,3 +94,20 @@ textarea {min-height:210px;resize:vertical;line-height:1.55}
 
 select#vECC {appearance:auto;cursor:pointer;padding-right:28px}
 select#vECC:disabled {background:#f2f3f6;color:#7d8696;cursor:not-allowed}
+
+/* Acceso al catálogo: la página sigue siendo pública, los datos no. */
+.auth-panel {display:grid;grid-template-columns:minmax(200px,1fr) minmax(300px,1.4fr);gap:10px 24px;align-items:center;background:#fff;border:1px solid #dfe4ea;border-left:4px solid var(--red);border-radius:13px;padding:20px 23px;margin-bottom:19px;box-shadow:var(--shadow)}
+.auth-title {display:flex;align-items:center;gap:9px}.auth-title h2 {font-size:.96rem;margin:0}
+.auth-symbol {font-size:1.16rem}
+.auth-copy p {font-size:.78rem;color:var(--muted);line-height:1.55;margin:8px 0 0}
+.auth-form {display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;align-items:center;gap:8px}
+.auth-form input {min-width:0;width:100%;height:43px;padding:9px 11px;border:1px solid #d7dce5;border-radius:8px;background:#fff}
+.auth-form input:focus-visible {outline:2px solid var(--red);outline-offset:1px}
+.btn-auth {height:43px;border:0;border-radius:8px;padding:10px 16px;background:var(--red);color:#fff;font-weight:780}
+.btn-auth:hover {background:var(--red-dark)}
+.btn-auth:disabled {background:#d7dbe2;color:#647184;cursor:wait}
+.auth-status {grid-column:1/-1;color:#7b8594;font-size:.78rem;margin:3px 0 0;min-height:1.4em}
+.auth-status.success {color:var(--green)}.auth-status.error {color:var(--red-dark)}
+.sr-only {position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+@media(max-width:920px){.auth-panel{grid-template-columns:1fr}.auth-form{grid-template-columns:repeat(2,minmax(0,1fr)) auto}}
+@media(max-width:600px){.auth-panel{padding:16px}.auth-form{grid-template-columns:1fr}.btn-auth{width:100%}}
