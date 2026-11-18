@@ -26,8 +26,8 @@
     if (typeof value !== "string" || !value.trim()) return "";
     try {
       const url = new URL(value.trim());
-      if (url.protocol !== "https:" || url.username || url.password || url.hash) return "";
-      if (/(^|\.)((?:powerplatform|logic|flow)\.microsoft\.com|powerautomate\.com|logic\.azure\.com)$/i.test(url.hostname))
+      if (url.protocol !== "https:" || url.username || url.password || url.hash || url.search) return "";
+      if (/(^|\.)(powerplatform\.com|powerautomate\.com|logic\.azure\.com|logicapps\.azure\.com|flow\.microsoft\.com)$/i.test(url.hostname))
         return "";
       if (/(?:^|\.)github\.io$/i.test(url.hostname)) return "";
       return url.href;
