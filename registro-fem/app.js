@@ -54,6 +54,9 @@
 
   let docsAfter = "";
   let activeDocFilter = "";
+  // Memoria temporal por ECC: solamente páginas que el usuario ya consultó.
+  // Nunca descargar todos los DNI automáticamente a una página pública.
+  let browseCache = { ecc: "", documents: [], after: "", more: false };
   let hasMore = false;
   let docLoaded = 0;
   let requestVersion = 0;
@@ -151,6 +154,7 @@
     queryAbort?.abort();
     docsAfter = "";
     activeDocFilter = "";
+    browseCache = { ecc: "", documents: [], after: "", more: false };
     docLoaded = 0;
     hasMore = false;
     loadMore.hidden = true;
@@ -196,7 +200,8 @@
       queryAbort?.abort();
       queryAbort = new AbortController();
       docsAfter = "";
-      activeDocFilter = documentInput.value.trim().slice(0, 40);
+      const typed = documentInput.value.trim().slice(0, 40);
+      activeDocFilter = typed.length >= 4 ? typed : "";
       docLoaded = 0;
       hasMore = false;
       loadMore.hidden = true;
@@ -257,6 +262,15 @@
       hasMore = matches.length > maxPage;
       docsAfter = page.length ? page[page.length - 1] : "";
       docLoaded += page.length;
+
+      if (!activeDocFilter) {
+        if (first || browseCache.ecc !== selectedECCValue) {
+          browseCache = { ecc: selectedECCValue, documents: [], after: "", more: false };
+        }
+        browseCache.documents.push(...page);
+        browseCache.after = docsAfter;
+        browseCache.more = hasMore;
+      }
       if (page.length) displayDocs(page, !first);
       else if (first) documentEmpty(activeDocFilter
         ? "No se encontraron coincidencias con ese documento."
@@ -366,12 +380,44 @@
 
   documentInput.addEventListener("input", () => {
     refreshChanged();
-    if ((powerAutomateFlowUrl || catalogUrl) && selectedECC()) {
-      clearTimeout(searchTimer);
-      resetDocs(documentInput.value.trim()
-        ? "Buscando coincidencias en los documentos..."
-        : "Consultando los documentos del ECC seleccionado...");
-      searchTimer = setTimeout(() => { void loadDocs(true); }, 400);
+    if ((!powerAutomateFlowUrl && !catalogUrl) || !selectedECC()) return;
+
+    clearTimeout(searchTimer);
+    queryAbort?.abort();
+    queryAbort = new AbortController();
+    requestVersion++;
+
+    const term = documentInput.value.trim().slice(0, 40);
+    const available = browseCache.ecc === selectedECC()
+      ? browseCache.documents : [];
+    const localMatches = term
+      ? available.filter(number => number.includes(term))
+      : available;
+
+    // Respuesta inmediata, sin pedir a Power Automate por cada tecla.
+    fillOptions(docList, []);
+    if (localMatches.length) displayDocs(localMatches, false);
+    else documentEmpty(term
+      ? "Sin coincidencias entre los documentos ya cargados."
+      : "No se han cargado documentos para este ECC.");
+
+    activeDocFilter = "";
+    docsAfter = browseCache.after;
+    hasMore = browseCache.more;
+    docLoaded = available.length;
+    docCount.textContent = numberFormat.format(localMatches.length) +
+      (term ? " coincidencias locales" : " cargados");
+    loadMore.disabled = false;
+    loadMore.hidden = Boolean(term) || !hasMore;
+
+    if (term.length >= 4) {
+      docsMessage.textContent = "Buscando también en los demás documentos...";
+      // Una consulta tras una pausa: búsqueda SQL para valores aún no cargados.
+      searchTimer = setTimeout(() => { void loadDocs(true); }, 850);
+    } else if (term) {
+      docsMessage.textContent = "Resultados inmediatos entre los cargados. Escribe 4 dígitos para buscar en el resto.";
+    } else {
+      docsMessage.textContent = hasMore ? "Puedes cargar más documentos." : "";
     }
   });
   form.addEventListener("change", refreshChanged);
