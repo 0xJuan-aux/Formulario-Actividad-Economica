@@ -89,3 +89,11 @@ El caso Power Automate de la captura se llama `REGIS_FAME_COB`, llama `SP_COB_Re
 La página interpreta la respuesta SQL en `ResultSets.Table1[0]`, o el formato aplanado, y no informa éxito únicamente por HTTP 200: exige un resultado positivo, `iCod_FEM` válido y `REGISTRADO` o `YA_REGISTRADO`. Reutiliza el UUID si una solicitud no obtuvo confirmación y se reintenta sin cambios, para evitar insertar duplicados. El éxito real sigue **pendiente de prueba por usuario**.
 
 **Seguridad antes de producción:** la URL del desencadenador con firma ya está publicada en GitHub Pages. Con el caso de escritura habilitado, terceros que copien la firma pueden intentar insertar registros y no existe un usuario verificado en el flujo mostrado. Se debe proteger la escritura, validar en el servidor que el documento pertenezca al ECC, atribuir cada registro a una identidad confiable y rotar la URL firmada expuesta. La autorización de una prueba funcional no reemplaza estas medidas.
+
+## Diagnóstico de primera prueba Guardar (19/11/2026)
+
+La captura enviada desde GitHub Pages mostró «No se pudo confirmar el registro». El mensaje anterior era genérico y ocultaba el origen del fallo. Se actualizó `app.js` para diferenciar HTTP distinto de 2xx, respuesta no JSON, JSON sin `ResultSets.Table1[0]` válido, y error de red/CORS. Nunca se reintenta automáticamente y se conserva `idSolicitud` si se reenvía sin cambios. No se muestran en consola datos personales, URL firmada ni respuesta SQL cruda.
+
+Comprobación ATD145 de solo lectura `COB_FEM_DIAG_REGISTRO_20261118_01`: **0** registros recientes que cumplan simultáneamente `vComentario='Prueba'`, `vEstado_Afectacion='Afectado'`, canal `EXTERNO` y fecha UTC de las últimas dos horas. Esto no sustituye una comprobación exacta por `idSolicitud` y no determina qué acción del flujo falló.
+
+**Siguiente diagnóstico:** antes de reintentar, mirar el historial de la ejecución reciente de Power Automate y el estado de las acciones `registrar fem` y `out reg fem`, sin compartir información personal. Si `registrar fem` está completada pero la página no confirma, revisar la forma de la salida de `out reg fem`; si está fallida, revisar el error del conector SQL. La URL firmada permite escritura anónima y debe protegerse antes de uso real.
