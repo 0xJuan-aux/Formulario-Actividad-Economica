@@ -101,3 +101,7 @@ Comprobación ATD145 de solo lectura `COB_FEM_DIAG_REGISTRO_20261118_01`: **0** 
 ## Condiciones de habilitación de Guardar (19/11/2026)
 
 Sin modificar el SP ni el contrato Power Automate, el botón Guardar está inicialmente deshabilitado y solo se activa cuando el formulario tiene ECC y documento, se ha elegido exactamente un estado `Afectado` o `No Afectado`, y `vComentario` contiene texto no vacío después de quitar espacios. La etiqueta del comentario presenta asterisco de obligatorio; el control de habilitación se recalcula en cambios del ComboBox, selección de documento, radiobutton y escritura del comentario. Durante un envío se deshabilita Guardar y después de un registro exitoso permanece inactivo para los mismos valores, evitando un segundo envío involuntario. El SP conserva su parámetro `@vComentario` técnicamente nullable; esta obligatoriedad se aplica en la interfaz.
+
+## Limpieza al cambiar de documento (19/11/2026)
+
+Al elegir un DNI distinto desde la lista, cambiar el DNI escrito en `vNro_doc` o cambiar de cabecera ECC (lo que descarta el DNI anterior), el frontend desmarca el radiobutton `Afectado/No Afectado`, vacía el comentario y reinicia su contador a `0`. Si el DNI es el mismo, no borra la evaluación. `Guardar` permanece inhabilitado hasta seleccionar otra vez el estado y escribir un comentario, manteniendo las demás validaciones y el control de duplicados. No hay cambios en SQL ni en Power Automate.
