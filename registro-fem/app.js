@@ -36,6 +36,19 @@
   };
   const apiUrl = safeGateway(config.apiUrl);
   const catalogUrl = safeGateway(config.catalogUrl);
+  // Solo para un flujo nuevo que exclusivamente devuelva vECC (sin rama DOCUMENTOS).
+  // La URL firmada de un flujo multipropósito NO se publica aquí.
+  const eccOnlyFlowUrl = (() => {
+    if (typeof config.eccOnlyFlowUrl !== "string" || !config.eccOnlyFlowUrl.trim()) return "";
+    try {
+      const url = new URL(config.eccOnlyFlowUrl.trim());
+      if (url.protocol !== "https:" || url.username || url.password || url.hash) return "";
+      if (!/^[a-z0-9.-]+\.environment\.api\.powerplatform\.com$/i.test(url.hostname)) return "";
+      if (!url.pathname.startsWith("/powerautomate/") || !url.pathname.endsWith("/invoke")) return "";
+      if (!url.searchParams.get("sig")) return "";
+      return url.href;
+    } catch { return ""; }
+  })();
   const numberFormat = new Intl.NumberFormat("es-PE");
   const maxPage = 150;
 
@@ -244,19 +257,40 @@
   }
 
   async function loadEcc() {
-    // No mostrar datos de clientes si el catálogo público seguro no está configurado.
-    if (!catalogUrl) {
+    if (!eccOnlyFlowUrl && !catalogUrl) {
       fillECCOptions([]);
       eccHelp.textContent = "La lista de ECC aún no está conectada.";
       return;
     }
     eccHelp.textContent = "Consultando cabeceras ECC...";
     try {
-      const rows = await queryCatalog({
+      const query = {
         vCodigo: "LISTA_ECC_FAME_COB",
         vModo: "ECC",
         iLimite: 500
-      });
+      };
+      let rows;
+      if (eccOnlyFlowUrl) {
+        // Opción 1: POST directo desde el navegador a un flujo EXCLUSIVO para ECC.
+        // Requiere que el desencadenador permita CORS para GitHub Pages.
+        const response = await fetch(eccOnlyFlowUrl, {
+          method: "POST",
+          mode: "cors",
+          credentials: "omit",
+          cache: "no-store",
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+          },
+          body: JSON.stringify(query)
+        });
+        const data = await response.json().catch(() => null);
+        if (!response.ok || !Array.isArray(data?.ResultSets?.Table1))
+          throw new Error("Respuesta ECC no disponible.");
+        rows = data.ResultSets.Table1;
+      } else {
+        rows = await queryCatalog(query);
+      }
       const unique = [...new Set(rows
         .map(row => typeof row?.vECC === "string" ? row.vECC.trim() : "")
         .filter(Boolean))];
@@ -266,7 +300,7 @@
         : "No hay cabeceras ECC disponibles.";
     } catch {
       fillECCOptions([]);
-      eccHelp.textContent = "La lista de ECC no está disponible.";
+      eccHelp.textContent = "La lista de ECC no está disponible. Comprueba la conexión o CORS del flujo.";
     }
   }
 
