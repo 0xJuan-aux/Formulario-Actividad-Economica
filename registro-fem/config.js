@@ -1,11 +1,12 @@
 /*
   Registro FEM: formulario publico, sin usuario ni contrasena.
-  eccOnlyFlowUrl: URL firmada del flujo seleccionado por el propietario.
-                  El formulario invoca exclusivamente vModo=ECC.
-  IMPORTANTE: la firma sera publica por alojarse en GitHub Pages.
-  El enlace permite otros modos del mismo flujo aunque el formulario solo utilice ECC.
-  El flujo exclusivo debe admitir CORS desde https://0xjuan-aux.github.io.
-  apiUrl y catalogUrl permanecen vacios: el guardado y consulta DNI no se habilitan.
+  eccOnlyFlowUrl: enlace firmado del desencadenador Power Automate existente.
+  El formulario realiza dos llamadas de lectura diferenciadas:
+    - LISTA_ECC_FAME_COB, vModo=ECC: lista cabeceras
+    - LISTA_DNI_FAME_COB, vModo=DOCUMENTOS: documentos del vECC elegido
+  AVISO: el enlace firmado es publico al estar en GitHub Pages.
+  Se requiere CORS compatible con https://0xjuan-aux.github.io.
+  apiUrl y catalogUrl siguen vacios; Guardar NO esta habilitado.
 */
 window.REGISTRO_FEM_PUBLIC_CONFIG = Object.freeze({
   apiUrl: "",
