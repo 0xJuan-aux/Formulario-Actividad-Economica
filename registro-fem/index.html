@@ -48,19 +48,13 @@
           <section class="panel" aria-labelledby="eccHeading">
             <div class="panel-head">
               <span class="panel-icon" aria-hidden="true">01</span>
-              <div><h2 id="eccHeading">Seleccionar cabecera ECC</h2><p>Elige una cabecera del desplegable o ingresa una nueva.</p></div>
+              <div><h2 id="eccHeading">Seleccionar cabecera ECC</h2><p>Selecciona una cabecera ECC.</p></div>
             </div>
             <label for="vECC" class="field-label">vECC <span class="required">*</span></label>
             <select id="vECC" name="vECC" required aria-describedby="eccHelp">
               <option value="">Selecciona una cabecera ECC</option>
-              <option value="__manual__">Otra cabecera — escribir manualmente</option>
             </select>
-            <div id="eccManualWrap" class="manual-ecc-field" hidden>
-              <label for="vECCManual" class="field-label">Nombre de la cabecera ECC <span class="required">*</span></label>
-              <input id="vECCManual" maxlength="250" autocomplete="off"
-                     placeholder="Escribe el nombre de la cabecera ECC">
-            </div>
-            <p class="helper" id="eccHelp" role="status" aria-live="polite">El desplegable está disponible sin credenciales. El catálogo automático aún no está conectado.</p>
+            <p class="helper" id="eccHelp" role="status" aria-live="polite">La lista de ECC aún no está conectada.</p>
           </section>
 
           <section class="panel panel-docs" aria-labelledby="docsHeading">
