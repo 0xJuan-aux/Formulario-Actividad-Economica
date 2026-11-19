@@ -70,3 +70,14 @@ La página pública cargó los ECC reales desde el flujo existente según confir
 El campo de texto existente `vNro_doc` también funciona como buscador de coincidencias parciales: al escribir uno o varios caracteres se realiza, tras una breve pausa, una consulta `LISTA_DNI_FAME_COB` con `vModo=DOCUMENTOS`, `vECC` del ComboBox y `vBuscar` igual al texto introducido. SQL usa `CHARINDEX(@buscar, resultado.vNro_doc) > 0`, por lo que compara cualquier posición, no solo el comienzo. Si se borra el texto se vuelve a consultar la lista inicial del ECC. `Cargar más documentos` conserva `vBuscar` y agrega `vDespues` para paginación. La lista visible también filtra localmente cualquier fila que no contenga la coincidencia, pero **para buscar en todos los documentos** es imprescindible que el caso Power Automate pase `triggerBody()?['vBuscar']` al parámetro SQL `@vBuscar`; en caso contrario solo podría examinar los documentos de la página que devolvió el flujo.
 
 No se modifican el SP, el ComboBox ECC, ni Guardar. La URL firmada en el frontend sigue siendo pública; la consulta de DNI debería protegerse mediante control de acceso para producción.
+
+## Optimización del buscador DNI (19/11/2026)
+
+En una página pública, cargar todos los DNI para cada ECC no es recomendable por privacidad, consumo de datos y tiempo de primera carga. La búsqueda se optimizó sin modificar el diseño:
+
+- Se conserva temporalmente **en memoria** el lote de documentos ya consultados de la cabecera ECC, no se escribe en almacenamiento persistente.
+- Cada tecla filtra inmediatamente solo los documentos ya cargados en el navegador, sin llamar a Power Automate.
+- Al escribir **cuatro o más dígitos** y dejar de teclear 850 ms, se consulta con `LISTA_DNI_FAME_COB`, `vModo=DOCUMENTOS`, `vECC` y `vBuscar` para encontrar también los documentos que aún no se cargaron. Por debajo de cuatro dígitos se muestran únicamente coincidencias locales.
+- Al borrar la búsqueda, se restaura el lote en memoria sin solicitarlo nuevamente. «Cargar más documentos» conserva la paginación de la lista base.
+
+El caso de Power Automate debe mapear `vBuscar` a `@vBuscar`; de lo contrario la consulta SQL no buscará en la totalidad del ECC. No se modificaron el SP, la URL, el ComboBox ni Guardar.
