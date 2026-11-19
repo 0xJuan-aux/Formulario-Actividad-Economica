@@ -460,22 +460,33 @@
         headers: { "Content-Type": "application/json", Accept: "application/json" },
         body: JSON.stringify(bodyToSend)
       });
-      const data = await response.json().catch(() => null);
-      // En la acción Respuesta de Power Automate, "Cuerpo" del conector SQL
-      // contiene ResultSets.Table1[0]; admitir también respuesta aplanada.
-      const resultado = data?.ResultSets?.Table1?.[0] ??
-        data?.resultsets?.Table1?.[0] ??
-        data?.body?.ResultSets?.Table1?.[0] ??
-        data;
+      if (!response.ok) {
+        // Mostrar solo código HTTP; no imprimir el cuerpo SQL, DNI ni URL firmada.
+        throw new Error("HTTP_" + response.status);
+      }
+      let data = await response.json().catch(() => null);
+      if (data === null) throw new Error("RESPUESTA_NO_JSON");
+      // Power Automate puede envolver el resultado SQL en body/Body o JSON texto.
+      if (typeof data === "string") {
+        try { data = JSON.parse(data); } catch { throw new Error("RESPUESTA_NO_JSON"); }
+      }
+      const sqlBody = data?.body ?? data?.Body ?? data;
+      const wrapped = typeof sqlBody === "string" ? (() => {
+        try { return JSON.parse(sqlBody); } catch { return null; }
+      })() : sqlBody;
+      const resultado = wrapped?.ResultSets?.Table1?.[0] ??
+        wrapped?.resultsets?.Table1?.[0] ??
+        wrapped?.resultSets?.Table1?.[0] ??
+        wrapped;
       const confirmado = resultado?.bResultado === true ||
         resultado?.bResultado === 1 || resultado?.bResultado === "true" ||
         resultado?.bResultado === "1";
       const code = Number(resultado?.iCod_FEM);
-      const estado = String(resultado?.vEstado || "").toUpperCase();
+      const estado = String(resultado?.vEstado || "").trim().toUpperCase();
       // HTTP 200 por sí solo NO confirma la transacción.
-      if (!response.ok || !confirmado || !Number.isSafeInteger(code) || code <= 0 ||
+      if (!confirmado || !Number.isSafeInteger(code) || code <= 0 ||
           !["REGISTRADO", "YA_REGISTRADO"].includes(estado))
-        throw new Error("El SP no confirmó el registro.");
+        throw new Error("SIN_CONFIRMACION_SQL");
 
       pendingSubmission = null;
       if (snapshot(payload()) === signature) {
@@ -486,9 +497,21 @@
         savedSnapshot = null;
         setStatus("Registro " + code + " guardado. Hay cambios nuevos pendientes.", "success");
       }
-    } catch {
-      // Conservar el identificador original en reintentos para impedir duplicados.
-      setStatus("No se pudo confirmar el registro. Comprueba la conexión antes de reintentar; el mismo envío reutilizará su identificador.", "error");
+    } catch (error) {
+      // Un fallo de lectura NO prueba que el INSERT fallara. Nunca reintentar automáticamente.
+      // Conservar idSolicitud para evitar duplicaciones si el usuario reintenta tras verificar.
+      const reason = String(error?.message || "");
+      let detail;
+      if (/^HTTP_\d{3}$/.test(reason)) {
+        detail = "Power Automate respondió HTTP " + reason.slice(5) + ". Revisa el historial del flujo y la acción «registrar fem».";
+      } else if (reason === "RESPUESTA_NO_JSON") {
+        detail = "Power Automate no devolvió JSON válido. Revisa el cuerpo de «out reg fem».";
+      } else if (reason === "SIN_CONFIRMACION_SQL") {
+        detail = "El flujo respondió, pero no devolvió la confirmación SQL (bResultado, vEstado e iCod_FEM). Revisa «out reg fem».";
+      } else {
+        detail = "No se pudo obtener la respuesta del flujo (red o CORS).";
+      }
+      setStatus(detail + " Verifica si se insertó antes de volver a pulsar Guardar.", "error");
     } finally {
       saving = false;
       saveLabel.textContent = "Guardar";
