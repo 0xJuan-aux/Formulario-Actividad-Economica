@@ -5,9 +5,9 @@ Ruta: `/registro-fem/` en GitHub Pages. Página independiente del formulario pri
 ## Estado actual (18 de noviembre de 2026)
 
 - **Sin usuario ni contraseña en la página pública**: se retiró el bloque de autenticación a solicitud del propietario.
-- `vECC`: **ComboBox HTML `<select>`** con flecha desplegable, siempre habilitado y sin login. La opción «Otra cabecera — escribir manualmente» muestra un campo adicional. Cuando se disponga de un catálogo público autorizado, las opciones se añadirán al desplegable.
+- `vECC`: **ComboBox HTML `<select>` sencillo**, sin login, sin opción de escritura manual y sin modalidades adicionales. Sus opciones provendrán del catálogo cuando esté conectado.
 - `vNro_doc`: campo editable para escribir el documento manualmente.
-- **No se muestran datos reales de ECC ni DNI automáticamente**: `config.js` mantiene `catalogUrl: ""`. El desplegable funciona con selección manual; aún no recibe listas reales desde Power Automate.
+- **No se muestran datos reales de ECC ni DNI automáticamente**: `config.js` mantiene `catalogUrl: ""`. El desplegable solo muestra el mensaje de selección hasta recibir opciones reales desde un catálogo autorizado; aún no recibe listas de Power Automate.
 - **Guardar** continúa deshabilitado porque `apiUrl: ""`; no se realiza ninguna inserción.
 - La firma HTTP de Power Automate nunca se guardó en el repositorio ni en GitHub Pages.
 
