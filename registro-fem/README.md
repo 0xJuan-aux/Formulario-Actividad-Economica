@@ -1,123 +1,62 @@
-# Registro FEM externo (GitHub Pages)
+# Registro FEM externo — formulario público
 
-Ruta de la página: `/registro-fem/`.
+Ruta: `/registro-fem/` en GitHub Pages. Página independiente del formulario principal Actividad Económica.
 
-Este formulario está aislado del formulario principal Actividad Económica: no edita `/index.html` ni sus scripts.
+## Estado actual (18 de noviembre de 2026)
 
-## Contrato para Power Automate
+- **Sin usuario ni contraseña en la página pública**: se retiró el bloque de autenticación a solicitud del propietario.
+- `vECC`: entrada editable con `<input list="eccList">` (ComboBox de escritura y sugerencias), siempre habilitada.
+- `vNro_doc`: campo editable para escribir el documento manualmente.
+- **No se muestran datos reales de ECC ni DNI automáticamente**: `config.js` mantiene `catalogUrl: ""`. Los datos reales no están publicados y no se llama a Power Automate desde el JavaScript.
+- **Guardar** continúa deshabilitado porque `apiUrl: ""`; no se realiza ninguna inserción.
+- La firma HTTP de Power Automate nunca se guardó en el repositorio ni en GitHub Pages.
 
-El formulario genera un UUID nuevo para cada envío y reutiliza el mismo UUID al repetir un envío sin cambios después de un error de red.
+## Contrato Power Automate ya probado desde PowerShell
 
-```json
-{
-  "vCodigo": "REGIS_FAME_COB",
-  "idSolicitud": "<GUID generado por navegador>",
-  "vECC": "<cabecera seleccionada>",
-  "vNro_doc": "<documento seleccionado>",
-  "vEstado_Afectacion": "Afectado",
-  "vComentario": "Observación opcional"
-}
-```
-
-`vCodigo` sirve **para el Switch**, no para autenticar.
-
-En el caso `REGIS_FAME_COB`, el flujo debe validar formato, integridad y pertenencia de `vECC` y `vNro_doc` frente al origen `DB_CRE_BI.dbo.vw_reporte_diario_operacion` con `vAfectacion='Si'` y `u_CodGes_call IN ('SC','SG')`. Esta validación **no está dentro** del SP.
-
-El paso SQL Server llama:
-`DB_MAESTRO_BI.frm.SP_COB_Registro_FEM_Registrar`
-
-Mapeo:
-- `@idSolicitud` ← JSON `idSolicitud`.
-- `@vECC` ← JSON `vECC`.
-- `@vNro_doc` ← JSON `vNro_doc`.
-- `@vEstado_Afectacion` ← JSON `vEstado_Afectacion`.
-- `@vComentario` ← JSON `vComentario` o NULL.
-- `@vUsuario_Registro` ← identidad **verificada por la API** (no una cadena elegida por navegador).
-- `@vCanal_Registro` ← valor fijo `EXTERNO`.
-
-En Power Automate agregar una acción **Respuesta** que entregue `HTTP 200` exclusivamente si el SP confirmó escritura:
-
-```json
-{"bResultado": true, "vEstado": "REGISTRADO", "iCod_FEM": 123, "vMensaje": "Registro FEM guardado correctamente."}
-```
-
-En caso de validación fallida / error de escritura, responder con código 4xx/5xx y `bResultado:false`. No devolver éxito basándose solo en que el flujo se disparó.
-
-## Seguridad imprescindible para habilitar Guardar
-
-GitHub Pages aloja HTML, CSS y JavaScript públicos: **no se puede ocultar allí una URL HTTP firmada de Power Automate ni credenciales SQL**.
-
-- El desencadenador Power Automate visto en el diseño permite `Cualquiera`; **no enviarlo ni pegarlo en `config.js` ni en ninguna URL de navegador**. Configurar acceso autenticado donde sea viable; no interpretar el código `REGIS_FAME_COB` como secreto.
-- Exponer una **API intermedia segura HTTPS** con autorización, controles anti-abuso, validaciones de los campos y autenticación del usuario. Guardar la URL del flujo de Power Automate únicamente en variables/secrets del servidor de esa API.
-- El `config.js` público apunta a `https://atd-relay.onrender.com/api/fem/login` y `/api/fem/catalogo`; son rutas del proxy seguro, sin firmas ni claves. La autenticación se configura exclusivamente en Render.
-- El endpoint `catalogUrl` también debe requerir autorización antes de devolver cabeceras y documentos. No poner listas reales de DNI en el repositorio.
-- CORS no constituye autenticación. Si se usa sesión/cookie, exigir protección CSRF y cookies seguras; de lo contrario usar un flujo de identidad autenticado adecuado al proxy.
-- Nunca escribir datos personales o respuestas SQL en GitHub, logs de consola ni almacenamiento del navegador.
-
-El guardado permanece **deshabilitado** hasta implementar un endpoint de escritura independiente y autenticado. El campo `vECC` es un ComboBox que solo se habilita después de iniciar sesión y recibir el catálogo autorizado; los DNI siguen siendo privados.
-
-## Archivos
-
-- `index.html`: diseño y controles accesibles.
-- `styles.css`: tema AtencionDigital y adaptación móvil.
-- `app.js`: validaciones cliente, consulta opcional de catálogos, envío idempotente y confirmación real.
-- `config.js`: contiene solo las rutas HTTPS públicas del proxy ATD-Relay (`/api/fem/login` y `/api/fem/catalogo`) y `apiUrl` vacío para no habilitar escrituras.
-
-## Estado
-
-Página versionada en GitHub, pendiente de comprobación efectiva de publicación Pages, configuración de API segura, prueba de catálogos, ejecución HTTP real, autorización SQL y respuesta real del SP.
-
-## ComboBox ECC — integración con Power Automate (18/11/2026)
-
-La página ahora tiene un `<select id="vECC">` en lugar de una caja de texto libre. Está preparado para cargar automáticamente los valores de `vECC` mediante una petición POST al **proxy autenticado** configurado en `config.js` (`catalogUrl`).
-
-El contrato coincide con el flujo HTTP probado en PowerShell, sin revelar la URL firmada:
-
-**Solicitud para listar ECC:**
+Para listar ECC:
 
 ```json
 {
   "vCodigo": "LISTA_ECC_FAME_COB",
   "vModo": "ECC",
-  "iLimite": 500
+  "iLimite": 10
 }
 ```
 
-**Solicitud para listar DNI del ECC seleccionado:**
+Para DNI de un ECC:
 
 ```json
 {
   "vCodigo": "LISTA_ECC_FAME_COB",
   "vModo": "DOCUMENTOS",
-  "vECC": "<ECC seleccionado>",
-  "iLimite": 151
+  "vECC": "ECC SELECCIONADO",
+  "iLimite": 10
 }
 ```
 
-La respuesta del proxy debe conservar el cuerpo JSON confirmado del conector SQL en Power Automate:
+El SP `DB_MAESTRO_BI.frm.SP_COB_Registro_FEM_Consultar` respondió en ambas modalidades con HTTP 200 y forma `{"ResultSets":{"Table1":[{"vECC":"...","vNro_doc":null}]},"OutputParameters":{}}` (para `DOCUMENTOS`, `vNro_doc` es el DNI). Estas pruebas son del flujo desde PowerShell; **no certifican acceso desde el navegador**.
+
+Para registrar FEM, el botón Guardar debe usar el flujo `REGIS_FAME_COB` mediante un endpoint autorizado:
 
 ```json
 {
-  "ResultSets": {
-    "Table1": [
-      { "vECC": "ECC DEMO", "vNro_doc": null }
-    ]
-  },
-  "OutputParameters": {}
+  "vCodigo": "REGIS_FAME_COB",
+  "idSolicitud": "<UUID generado en navegador>",
+  "vECC": "<ECC>",
+  "vNro_doc": "<documento>",
+  "vEstado_Afectacion": "Afectado",
+  "vComentario": "Opcional"
 }
 ```
 
-En modo `DOCUMENTOS`, `Table1` trae `vNro_doc` como texto. La interfaz carga 150 filas por página y usa el último documento mostrado como `vDespues` en la siguiente consulta. El SP limita resultados a 500; el catálogo ECC presenta las primeras 500 cabeceras si hubiese más.
+El SP `DB_MAESTRO_BI.frm.SP_COB_Registro_FEM_Registrar` requiere validar pertenencia ECC/documento en el servidor, usuario de registro confiable y confirmar `iCod_FEM` antes de mostrar éxito. `vCodigo` es para el Switch, **no** autentica.
 
-**Observación de prueba del usuario:** en PowerShell, la llamada POST real `LISTA_ECC_FAME_COB` respondió HTTP 200 y `ResultSets.Table1` con 6 ECC; otra llamada modo `DOCUMENTOS` respondió HTTP 200 con 6 documentos para una cabecera de prueba. Estos ensayos son evidencia de Power Automate desde la máquina del usuario, **no** de una conexión operativa de la página.
+## Seguridad y conexión futura
 
-**Pendiente:** aprovisionar y configurar la API intermedia HTTPS autenticada, guardar la URL firmada de Power Automate como secreto en el servidor, autorizar acceso por usuario, definir CORS para GitHub Pages y cargar el `catalogUrl` público sin firma. El formulario público **no** debe divulgar nombres de clientes ni DNI sin permisos adecuados. Hasta ese momento el ComboBox queda deshabilitado. El código `LISTA_ECC_FAME_COB` no es una credencial.
+GitHub Pages sirve código público: una URL con parámetro `sig` quedaría al alcance de cualquiera si se pegara en HTML o JS. Además de posible bloqueo CORS, permitiría consultar nombres y DNI reales. La autorización para usar la URL durante pruebas **no** convierte los datos de clientes en información pública.
 
+Por ahora el formulario está abierto y editable, con listas automáticas desactivadas; si se requiere consulta real en web, acordar un endpoint que limite lo que se muestra sin divulgar la firma ni los DNI de terceros.
 
-## Integración a ATD-Relay — 18/11/2026
+ATD-Relay dispone de un módulo de proxy FEM de lectura en código, pero **no está conectado a la página actual** ni se declara activo; su activación requeriría autorización y configuración separadas.
 
-La página dispone de formulario de autenticación independiente; se puede abrir sin login, pero **los ECC/DNI exigen sesión verificada**. El navegador envía usuario y clave al backend Render, recibe un token de 20 minutos que permanece solo en memoria, y consulta `/api/fem/catalogo` pasando `vCodigo=LISTA_ECC_FAME_COB` y `vModo=ECC` o `DOCUMENTOS`. El proxy llama a Power Automate con la URL firmada guardada **solo** en `ATD_FEM_FLOW_URL` del servidor.
-
-La URL firmada que el usuario compartió está ausente de este repositorio. Para activar la conexión, configurar en Render las cuatro variables `ATD_FEM_ENABLED`, `ATD_FEM_FLOW_URL`, `ATD_FEM_USERS_JSON`, `ATD_FEM_SESSION_KEY`; ver instrucciones en el repo privado ATD-Relay: `docs/registro-fem-powerautomate.md`.
-
-**Estado:** código del frontend/backend enlazado en GitHub. Falta confirmar el desplegado real del backend y sus variables privadas; no declarar resultados ECC visibles hasta pasar prueba con usuario autorizado. Guardar continúa deshabilitado.
+Archivos: `index.html`, `styles.css`, `app.js`, `config.js`.
