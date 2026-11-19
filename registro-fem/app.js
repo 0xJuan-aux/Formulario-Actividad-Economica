@@ -5,6 +5,8 @@
   if (!form) return;
 
   const ecc = document.getElementById("vECC");
+  const eccManualWrap = document.getElementById("eccManualWrap");
+  const eccManual = document.getElementById("vECCManual");
   const documentInput = document.getElementById("vNro_doc");
   const comment = document.getElementById("vComentario");
   const docList = document.getElementById("docList");
@@ -65,10 +67,21 @@
     return [h.slice(0, 8), h.slice(8, 12), h.slice(12, 16), h.slice(16, 20), h.slice(20)].join("-");
   }
 
+  function selectedECC() {
+    return ecc.value === "__manual__" ? eccManual.value.trim() : ecc.value.trim();
+  }
+
+  function syncECCManual() {
+    const manual = ecc.value === "__manual__";
+    eccManualWrap.hidden = !manual;
+    eccManual.required = manual;
+    if (manual && document.activeElement === ecc) eccManual.focus();
+  }
+
   function payload() {
     return {
       vCodigo: "REGIS_FAME_COB",
-      vECC: ecc.value.trim(),
+      vECC: selectedECC(),
       vNro_doc: documentInput.value.trim(),
       vEstado_Afectacion: form.querySelector('input[name="vEstado_Afectacion"]:checked')?.value || "",
       vComentario: comment.value.trim() || null
@@ -169,8 +182,8 @@
   }
 
   async function loadDocs(first = true) {
-    const selectedECC = ecc.value.trim();
-    if (!catalogUrl || !selectedECC) return;
+    const selectedECCValue = selectedECC();
+    if (!catalogUrl || !selectedECCValue) return;
     const version = ++requestVersion;
     if (first) {
       queryAbort?.abort();
@@ -185,7 +198,7 @@
     const requestBody = {
       vCodigo: "LISTA_ECC_FAME_COB",
       vModo: "DOCUMENTOS",
-      vECC: selectedECC,
+      vECC: selectedECCValue,
       iLimite: maxPage + 1
     };
     if (first && documentInput.value.trim())
@@ -194,7 +207,7 @@
 
     try {
       const rows = await queryCatalog(requestBody, queryAbort.signal);
-      if (version !== requestVersion || ecc.value.trim() !== selectedECC) return;
+      if (version !== requestVersion || selectedECC() !== selectedECCValue) return;
       const numbers = rows
         .map(row => typeof row?.vNro_doc === "string" ? row.vNro_doc.trim() : "")
         .filter(Boolean);
@@ -218,15 +231,40 @@
     }
   }
 
+  function fillECCOptions(items) {
+    const previous = ecc.value;
+    const fragment = document.createDocumentFragment();
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = "Selecciona una cabecera ECC";
+    fragment.appendChild(placeholder);
+
+    for (const value of items) {
+      if (typeof value !== "string" || !value.trim()) continue;
+      const name = value.trim();
+      const option = document.createElement("option");
+      option.value = name;
+      option.textContent = name;
+      fragment.appendChild(option);
+    }
+
+    const manual = document.createElement("option");
+    manual.value = "__manual__";
+    manual.textContent = "Otra cabecera — escribir manualmente";
+    fragment.appendChild(manual);
+    ecc.replaceChildren(fragment);
+    if ([...ecc.options].some(option => option.value === previous)) ecc.value = previous;
+    syncECCManual();
+  }
+
   async function loadEcc() {
-    // El formulario es público y no requiere credenciales de acceso.
-    // No se consulta un flujo que contenga DNI si la API segura no está configurada.
+    // No mostrar datos de clientes si el catálogo público seguro no está configurado.
     if (!catalogUrl) {
-      fillOptions(eccList, []);
-      eccHelp.textContent = "Puedes escribir la cabecera ECC. La lista automática aún no está disponible.";
+      fillECCOptions([]);
+      eccHelp.textContent = "Usa el desplegable y selecciona «Otra cabecera» para ingresar un ECC. La lista automática aún no está disponible.";
       return;
     }
-    eccHelp.textContent = "Consultando las cabeceras disponibles...";
+    eccHelp.textContent = "Consultando cabeceras ECC...";
     try {
       const rows = await queryCatalog({
         vCodigo: "LISTA_ECC_FAME_COB",
@@ -236,12 +274,13 @@
       const unique = [...new Set(rows
         .map(row => typeof row?.vECC === "string" ? row.vECC.trim() : "")
         .filter(Boolean))];
-      fillOptions(eccList, unique);
+      fillECCOptions(unique);
       eccHelp.textContent = unique.length
-        ? "Selecciona una cabecera sugerida o ingresa una manualmente."
-        : "No hay cabeceras disponibles. Puedes ingresar una manualmente.";
+        ? "Elige una cabecera del desplegable o escribe otra."
+        : "La consulta no devolvió ECC; puedes ingresar uno manualmente.";
     } catch {
-      eccHelp.textContent = "La lista automática no está disponible; puedes escribir el ECC manualmente.";
+      fillECCOptions([]);
+      eccHelp.textContent = "Catálogo no disponible. Selecciona «Otra cabecera» para escribir un ECC.";
     }
   }
 
@@ -254,15 +293,21 @@
     }
   }
 
-  ecc.addEventListener("input", () => {
+  function onECCChange() {
     documentInput.value = "";
-    resetDocs(catalogUrl ? "Selecciona un vECC para consultar sus documentos." : "Catálogo de documentos pendiente de conexión.");
+    resetDocs(catalogUrl ? "Selecciona un ECC para consultar sus documentos." : "Catálogo de documentos pendiente de conexión.");
     refreshChanged();
-    if (catalogUrl) {
+    if (catalogUrl && selectedECC()) {
       clearTimeout(searchTimer);
       searchTimer = setTimeout(() => { void loadDocs(true); }, 450);
     }
+  }
+
+  ecc.addEventListener("change", () => {
+    syncECCManual();
+    onECCChange();
   });
+  eccManual.addEventListener("input", onECCChange);
 
   documentInput.addEventListener("input", () => {
     refreshChanged();
