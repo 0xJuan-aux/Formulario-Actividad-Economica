@@ -64,3 +64,9 @@ Archivos: `index.html`, `styles.css`, `app.js`, `config.js`.
 ## Actualización 18/11/2026 — conexión directa del ComboBox ECC
 
 La página pública cargó los ECC reales desde el flujo existente según confirmación del propietario. Se programó después la consulta de documentos `LISTA_DNI_FAME_COB` al cambiar `vECC`; queda pendiente su comprobación con el código Switch de Power Automate y respuesta HTTP real. El botón Guardar permanece inactivo. La firma expuesta permite ejecutar las modalidades que tenga habilitadas el flujo, por lo que se recomienda sustituirla por un endpoint con autorización y rotarla.
+
+## Búsqueda por coincidencia en `vNro_doc` (19/11/2026)
+
+El campo de texto existente `vNro_doc` también funciona como buscador de coincidencias parciales: al escribir uno o varios caracteres se realiza, tras una breve pausa, una consulta `LISTA_DNI_FAME_COB` con `vModo=DOCUMENTOS`, `vECC` del ComboBox y `vBuscar` igual al texto introducido. SQL usa `CHARINDEX(@buscar, resultado.vNro_doc) > 0`, por lo que compara cualquier posición, no solo el comienzo. Si se borra el texto se vuelve a consultar la lista inicial del ECC. `Cargar más documentos` conserva `vBuscar` y agrega `vDespues` para paginación. La lista visible también filtra localmente cualquier fila que no contenga la coincidencia, pero **para buscar en todos los documentos** es imprescindible que el caso Power Automate pase `triggerBody()?['vBuscar']` al parámetro SQL `@vBuscar`; en caso contrario solo podría examinar los documentos de la página que devolvió el flujo.
+
+No se modifican el SP, el ComboBox ECC, ni Guardar. La URL firmada en el frontend sigue siendo pública; la consulta de DNI debería protegerse mediante control de acceso para producción.
