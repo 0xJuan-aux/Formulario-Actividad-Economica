@@ -49,6 +49,10 @@
       return url.href;
     } catch { return ""; }
   })();
+  // Guardar utiliza el mismo desencadenador con vCodigo=REGIS_FAME_COB.
+  // No copiar la firma a otro archivo ni confundir HTTP 200 con INSERT confirmado.
+  const saveUrl = apiUrl || powerAutomateFlowUrl;
+  const isDirectSave = !apiUrl && Boolean(powerAutomateFlowUrl);
   const numberFormat = new Intl.NumberFormat("es-PE");
   const maxPage = 10; // Prueba: máximo 10 documentos visibles por página.
 
@@ -361,8 +365,8 @@
     if (saving) return;
     if (savedSnapshot !== null && snapshot(payload()) !== savedSnapshot) {
       savedSnapshot = null;
-      saveButton.disabled = !apiUrl;
-      setStatus(apiUrl ? "Cambios pendientes de guardar." : "Integración externa segura pendiente.");
+      saveButton.disabled = !saveUrl;
+      setStatus(saveUrl ? "Cambios pendientes de guardar." : "Conexión para guardar no disponible.");
     }
   }
 
@@ -429,7 +433,7 @@
 
   form.addEventListener("submit", async event => {
     event.preventDefault();
-    if (saving || !apiUrl) return;
+    if (saving || !saveUrl) return;
     const body = payload();
     const error = validate(body);
     if (error) { setStatus(error, "error"); return; }
@@ -446,25 +450,38 @@
     saving = true;
     saveButton.disabled = true;
     saveLabel.textContent = "Guardando...";
-    setStatus("Enviando registro a la API segura...");
+    setStatus("Enviando registro a Power Automate...");
     try {
-      const response = await fetch(apiUrl, {
-        method: "POST", credentials: "include", cache: "no-store",
+      const response = await fetch(saveUrl, {
+        method: "POST",
+        mode: "cors",
+        credentials: isDirectSave ? "omit" : "include",
+        cache: "no-store",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
         body: JSON.stringify(bodyToSend)
       });
       const data = await response.json().catch(() => null);
-      // No reportar éxito si el flujo no respondió con confirmación SQL real.
-      if (!response.ok || !data || data.bResultado !== true)
-        throw new Error(data?.vMensaje || "No hubo confirmación de guardado por SQL.");
-      const code = Number(data.iCod_FEM);
-      if (!Number.isSafeInteger(code) || code <= 0)
-        throw new Error("No se recibió el código de registro confirmado por SQL.");
+      // En la acción Respuesta de Power Automate, "Cuerpo" del conector SQL
+      // contiene ResultSets.Table1[0]; admitir también respuesta aplanada.
+      const resultado = data?.ResultSets?.Table1?.[0] ??
+        data?.resultsets?.Table1?.[0] ??
+        data?.body?.ResultSets?.Table1?.[0] ??
+        data;
+      const confirmado = resultado?.bResultado === true ||
+        resultado?.bResultado === 1 || resultado?.bResultado === "true" ||
+        resultado?.bResultado === "1";
+      const code = Number(resultado?.iCod_FEM);
+      const estado = String(resultado?.vEstado || "").toUpperCase();
+      // HTTP 200 por sí solo NO confirma la transacción.
+      if (!response.ok || !confirmado || !Number.isSafeInteger(code) || code <= 0 ||
+          !["REGISTRADO", "YA_REGISTRADO"].includes(estado))
+        throw new Error("El SP no confirmó el registro.");
 
       pendingSubmission = null;
       if (snapshot(payload()) === signature) {
         savedSnapshot = signature;
-        setStatus("Registro guardado correctamente. Código FEM: " + code + ".", "success");
+        setStatus((estado === "YA_REGISTRADO" ? "Solicitud ya registrada" : "Registro guardado correctamente") +
+          ". Código FEM: " + code + ".", "success");
       } else {
         savedSnapshot = null;
         setStatus("Registro " + code + " guardado. Hay cambios nuevos pendientes.", "success");
@@ -475,16 +492,16 @@
     } finally {
       saving = false;
       saveLabel.textContent = "Guardar";
-      saveButton.disabled = !apiUrl || (savedSnapshot !== null && savedSnapshot === snapshot(payload()));
+      saveButton.disabled = !saveUrl || (savedSnapshot !== null && savedSnapshot === snapshot(payload()));
     }
   });
 
-  if (apiUrl) {
+  if (saveUrl) {
     saveButton.disabled = false;
-    setStatus("Formulario preparado para registrar por la API segura. Completa los campos.");
+    setStatus("Prueba de registro habilitada. Completa los campos y pulsa Guardar.");
   } else {
     saveButton.disabled = true;
-    setStatus("Formulario listo para revisar. El envío se habilitará al conectar una API segura que oculte Power Automate.");
+    setStatus("Conexión de registro no disponible.");
   }
   resetDocs(powerAutomateFlowUrl || catalogUrl
     ? "Selecciona una cabecera ECC para consultar sus documentos."
