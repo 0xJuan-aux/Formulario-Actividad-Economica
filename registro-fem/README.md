@@ -105,3 +105,9 @@ Sin modificar el SP ni el contrato Power Automate, el botón Guardar está inici
 ## Limpieza al cambiar de documento (19/11/2026)
 
 Al elegir un DNI distinto desde la lista, cambiar el DNI escrito en `vNro_doc` o cambiar de cabecera ECC (lo que descarta el DNI anterior), el frontend desmarca el radiobutton `Afectado/No Afectado`, vacía el comentario y reinicia su contador a `0`. Si el DNI es el mismo, no borra la evaluación. `Guardar` permanece inhabilitado hasta seleccionar otra vez el estado y escribir un comentario, manteniendo las demás validaciones y el control de duplicados. No hay cambios en SQL ni en Power Automate.
+
+## Limpieza tras Guardar exitoso (19/11/2026)
+
+Cuando el caso `REGIS_FAME_COB` devuelve una confirmación SQL válida (`bResultado` verdadero, `vEstado` en `REGISTRADO` o `YA_REGISTRADO` e `iCod_FEM` positivo), el formulario borra el DNI de `vNro_doc`, desmarca el DNI de la lista, desmarca el estado `Afectado/No Afectado`, vacía `vComentario` y reinicia su contador. **Conserva el ECC y los documentos ya cargados** para que el operador elija el siguiente DNI sin repetir la consulta. Guardar vuelve a quedar deshabilitado mientras no se complete la evaluación siguiente. El resultado de éxito y código FEM permanecen visibles. Cada nuevo envío completo recibe un nuevo `idSolicitud`.
+
+Si el envío falla o no se confirma, **no se limpian campos** y se conserva el UUID original para investigar/reintentar sin duplicar. Si el usuario modificó el formulario durante el envío, se conservan sus nuevas entradas en vez de borrarlas.
