@@ -7,9 +7,9 @@ Ruta: `/registro-fem/` en GitHub Pages. Página independiente del formulario pri
 - **Sin usuario ni contraseña en la página pública**: se retiró el bloque de autenticación a solicitud del propietario.
 - `vECC`: **ComboBox HTML `<select>` sencillo**, sin login, sin opción de escritura manual y sin modalidades adicionales. Sus opciones provendrán del catálogo cuando esté conectado.
 - `vNro_doc`: campo editable para escribir el documento manualmente.
-- **ComboBox directo preparado para modo ECC**: `app.js` ya puede realizar `POST` con `vCodigo=LISTA_ECC_FAME_COB`, `vModo=ECC`, `iLimite=500` e interpretar solo `ResultSets.Table1[].vECC`. `config.js` tiene `eccOnlyFlowUrl: ""`, pendiente de una URL de flujo exclusiva de ECC y una comprobación de CORS. No se muestran datos reales todavía.
+- **ComboBox ECC conectado a la URL en el código de GitHub Pages**: `app.js` realiza `POST` con `vCodigo=LISTA_ECC_FAME_COB`, `vModo=ECC`, `iLimite=500` e interpreta solo `ResultSets.Table1[].vECC`. `config.js` contiene la URL firmada proporcionada por el propietario (no reproducirla en documentación). **La respuesta desde navegador y CORS aún no están verificados**.
 - **Guardar** continúa deshabilitado porque `apiUrl: ""`; no se realiza ninguna inserción.
-- La firma HTTP de Power Automate nunca se guardó en el repositorio ni en GitHub Pages.
+- **Advertencia**: la URL firmada fue agregada a `registro-fem/config.js` por autorización expresa del propietario; al ser pública, cualquier visitante puede inspeccionarla y activar cualquier modalidad que admita el mismo flujo. No hay consulta de DNI habilitada en la interfaz, pero eso no restringe el uso de la URL fuera de la interfaz.
 
 ## Contrato Power Automate ya probado desde PowerShell
 
@@ -60,3 +60,7 @@ Por ahora el formulario permanece público, con un ComboBox ECC sin datos reales
 ATD-Relay dispone de un módulo de proxy FEM de lectura en código, pero **no está conectado a la página actual** ni se declara activo; su activación requeriría autorización y configuración separadas.
 
 Archivos: `index.html`, `styles.css`, `app.js`, `config.js`.
+
+## Actualización 18/11/2026 — conexión directa del ComboBox ECC
+
+La página pública se conectó directamente con el flujo existente únicamente para cargar el select `vECC`. Los campos `vNro_doc` y Guardar no fueron conectados. El servidor de Power Automate debe admitir CORS desde `https://0xjuan-aux.github.io` para que JavaScript pueda leer la respuesta; HTTP 200 desde PowerShell no demuestra CORS. **No hay verificación real desde navegador.** La firma expuesta permite otras modalidades del flujo que pudieran estar habilitadas, por lo que se recomienda rotarla y reemplazarla por un endpoint exclusivo del catálogo público cuando se complete la prueba.
