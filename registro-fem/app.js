@@ -53,6 +53,7 @@
   const maxPage = 10; // Prueba: máximo 10 documentos visibles por página.
 
   let docsAfter = "";
+  let activeDocFilter = "";
   let hasMore = false;
   let docLoaded = 0;
   let requestVersion = 0;
@@ -149,6 +150,7 @@
     requestVersion++;
     queryAbort?.abort();
     docsAfter = "";
+    activeDocFilter = "";
     docLoaded = 0;
     hasMore = false;
     loadMore.hidden = true;
@@ -188,14 +190,22 @@
   async function loadDocs(first = true) {
     const selectedECCValue = selectedECC();
     if ((!powerAutomateFlowUrl && !catalogUrl) || !selectedECCValue) return;
+    if (!first && !hasMore) return;
     const version = ++requestVersion;
     if (first) {
       queryAbort?.abort();
       queryAbort = new AbortController();
       docsAfter = "";
+      activeDocFilter = documentInput.value.trim().slice(0, 40);
       docLoaded = 0;
-      documentEmpty("Consultando documentos del ECC seleccionado...");
-    } else if (!hasMore) return;
+      hasMore = false;
+      loadMore.hidden = true;
+      docCount.textContent = "0 cargados";
+      fillOptions(docList, []);
+      documentEmpty(activeDocFilter
+        ? "Buscando documentos que contengan: " + activeDocFilter
+        : "Consultando documentos del ECC seleccionado...");
+    }
 
     loadMore.disabled = true;
     docsMessage.textContent = "Consultando documentos...";
@@ -205,8 +215,9 @@
       vECC: selectedECCValue,
       iLimite: maxPage + 1
     };
-    if (first && documentInput.value.trim())
-      requestBody.vBuscar = documentInput.value.trim().slice(0, 40);
+    // Misma coincidencia parcial en todas las páginas, no solo en la primera.
+    // El caso LISTA_DNI_FAME_COB debe mapear vBuscar -> @vBuscar del SP.
+    if (activeDocFilter) requestBody.vBuscar = activeDocFilter;
     if (!first && docsAfter) requestBody.vDespues = docsAfter;
 
     try {
@@ -237,12 +248,19 @@
       const numbers = rows
         .map(row => typeof row?.vNro_doc === "string" ? row.vNro_doc.trim() : "")
         .filter(Boolean);
-      const page = numbers.slice(0, maxPage);
-      hasMore = numbers.length > maxPage;
+      // Evitar mostrar un DNI que no coincida si el flujo omitió @vBuscar.
+      // Para buscar en todo el catálogo, el filtro también debe aplicarse en SQL.
+      const matches = activeDocFilter
+        ? numbers.filter(number => number.includes(activeDocFilter))
+        : numbers;
+      const page = matches.slice(0, maxPage);
+      hasMore = matches.length > maxPage;
       docsAfter = page.length ? page[page.length - 1] : "";
       docLoaded += page.length;
       if (page.length) displayDocs(page, !first);
-      else if (first) documentEmpty("No se encontraron documentos para este ECC.");
+      else if (first) documentEmpty(activeDocFilter
+        ? "No se encontraron coincidencias con ese documento."
+        : "No se encontraron documentos para este ECC.");
       docCount.textContent = numberFormat.format(docLoaded) +
         (hasMore ? "+ cargados" : " cargados");
       loadMore.hidden = !hasMore;
@@ -348,9 +366,12 @@
 
   documentInput.addEventListener("input", () => {
     refreshChanged();
-    if (powerAutomateFlowUrl || catalogUrl) {
+    if ((powerAutomateFlowUrl || catalogUrl) && selectedECC()) {
       clearTimeout(searchTimer);
-      searchTimer = setTimeout(() => { void loadDocs(true); }, 450);
+      resetDocs(documentInput.value.trim()
+        ? "Buscando coincidencias en los documentos..."
+        : "Consultando los documentos del ECC seleccionado...");
+      searchTimer = setTimeout(() => { void loadDocs(true); }, 400);
     }
   });
   form.addEventListener("change", refreshChanged);
