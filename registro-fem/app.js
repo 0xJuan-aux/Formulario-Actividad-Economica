@@ -69,6 +69,7 @@
   let saving = false;
   let pendingSubmission = null;
   let savedSnapshot = null;
+  let lastDocumentValue = documentInput.value.trim();
 
   function setStatus(message, kind = "") {
     saveText.textContent = message;
@@ -184,7 +185,7 @@
       radio.checked = documentInput.value === number;
       radio.addEventListener("change", () => {
         documentInput.value = number;
-        refreshChanged();
+        onDocumentValueChanged();
       });
       const span = document.createElement("span");
       span.textContent = number;
@@ -374,10 +375,24 @@
     saveButton.disabled = saving || !saveUrl || Boolean(validate(body)) || alreadySaved;
   }
 
+  function onDocumentValueChanged(force = false) {
+    const currentValue = documentInput.value.trim();
+    if (force || currentValue !== lastDocumentValue) {
+      lastDocumentValue = currentValue;
+      // Cada documento necesita su propia evaluación y comentario.
+      form.querySelectorAll('input[name="vEstado_Afectacion"]').forEach(radio => {
+        radio.checked = false;
+      });
+      comment.value = "";
+      charCount.textContent = "0";
+    }
+    refreshChanged();
+  }
+
   function onECCChange() {
     documentInput.value = "";
+    onDocumentValueChanged(true);
     resetDocs(powerAutomateFlowUrl || catalogUrl ? "Consultando documentos del ECC seleccionado..." : "Catálogo de documentos pendiente de conexión.");
-    refreshChanged();
     if ((powerAutomateFlowUrl || catalogUrl) && selectedECC()) {
       clearTimeout(searchTimer);
       searchTimer = setTimeout(() => { void loadDocs(true); }, 450);
@@ -387,7 +402,7 @@
   ecc.addEventListener("change", onECCChange);
 
   documentInput.addEventListener("input", () => {
-    refreshChanged();
+    onDocumentValueChanged();
     if ((!powerAutomateFlowUrl && !catalogUrl) || !selectedECC()) return;
 
     clearTimeout(searchTimer);
