@@ -36,9 +36,9 @@
   };
   const apiUrl = safeGateway(config.apiUrl);
   const catalogUrl = safeGateway(config.catalogUrl);
-  // Solo para un flujo nuevo que exclusivamente devuelva vECC (sin rama DOCUMENTOS).
-  // La URL firmada de un flujo multipropósito NO se publica aquí.
-  const eccOnlyFlowUrl = (() => {
+  // URL directa de Power Automate: ECC y DOCUMENTOS comparten el desencadenador.
+  // La firma ya figura en config.js público; este archivo no la duplica.
+  const powerAutomateFlowUrl = (() => {
     if (typeof config.eccOnlyFlowUrl !== "string" || !config.eccOnlyFlowUrl.trim()) return "";
     try {
       const url = new URL(config.eccOnlyFlowUrl.trim());
@@ -50,7 +50,7 @@
     } catch { return ""; }
   })();
   const numberFormat = new Intl.NumberFormat("es-PE");
-  const maxPage = 150;
+  const maxPage = 10; // Prueba: máximo 10 documentos visibles por página.
 
   let docsAfter = "";
   let hasMore = false;
@@ -187,7 +187,7 @@
 
   async function loadDocs(first = true) {
     const selectedECCValue = selectedECC();
-    if (!catalogUrl || !selectedECCValue) return;
+    if ((!powerAutomateFlowUrl && !catalogUrl) || !selectedECCValue) return;
     const version = ++requestVersion;
     if (first) {
       queryAbort?.abort();
@@ -200,7 +200,7 @@
     loadMore.disabled = true;
     docsMessage.textContent = "Consultando documentos...";
     const requestBody = {
-      vCodigo: "LISTA_ECC_FAME_COB",
+      vCodigo: "LISTA_DNI_FAME_COB",
       vModo: "DOCUMENTOS",
       vECC: selectedECCValue,
       iLimite: maxPage + 1
@@ -210,7 +210,29 @@
     if (!first && docsAfter) requestBody.vDespues = docsAfter;
 
     try {
-      const rows = await queryCatalog(requestBody, queryAbort.signal);
+      // La clave vECC del JSON se mapea al parámetro @vECC del SP mediante el caso Power Automate.
+      // El usuario solicitó LISTA_DNI_FAME_COB, no cambiar el caso de ECC.
+      let rows;
+      if (powerAutomateFlowUrl) {
+        const response = await fetch(powerAutomateFlowUrl, {
+          method: "POST",
+          mode: "cors",
+          credentials: "omit",
+          cache: "no-store",
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+          },
+          body: JSON.stringify(requestBody),
+          signal: queryAbort.signal
+        });
+        const data = await response.json().catch(() => null);
+        if (!response.ok || !Array.isArray(data?.ResultSets?.Table1))
+          throw new Error("Respuesta DOCUMENTOS no disponible.");
+        rows = data.ResultSets.Table1;
+      } else {
+        rows = await queryCatalog(requestBody, queryAbort.signal);
+      }
       if (version !== requestVersion || selectedECC() !== selectedECCValue) return;
       const numbers = rows
         .map(row => typeof row?.vNro_doc === "string" ? row.vNro_doc.trim() : "")
@@ -257,7 +279,7 @@
   }
 
   async function loadEcc() {
-    if (!eccOnlyFlowUrl && !catalogUrl) {
+    if (!powerAutomateFlowUrl && !catalogUrl) {
       fillECCOptions([]);
       eccHelp.textContent = "La lista de ECC aún no está conectada.";
       return;
@@ -270,10 +292,9 @@
         iLimite: 500
       };
       let rows;
-      if (eccOnlyFlowUrl) {
-        // Opción 1: POST directo desde el navegador a un flujo EXCLUSIVO para ECC.
-        // Requiere que el desencadenador permita CORS para GitHub Pages.
-        const response = await fetch(eccOnlyFlowUrl, {
+      if (powerAutomateFlowUrl) {
+        // Opción 1: POST directo; esta llamada solo solicita modo ECC.
+        const response = await fetch(powerAutomateFlowUrl, {
           method: "POST",
           mode: "cors",
           credentials: "omit",
@@ -315,9 +336,9 @@
 
   function onECCChange() {
     documentInput.value = "";
-    resetDocs(catalogUrl ? "Selecciona un ECC para consultar sus documentos." : "Catálogo de documentos pendiente de conexión.");
+    resetDocs(powerAutomateFlowUrl || catalogUrl ? "Consultando documentos del ECC seleccionado..." : "Catálogo de documentos pendiente de conexión.");
     refreshChanged();
-    if (catalogUrl && selectedECC()) {
+    if ((powerAutomateFlowUrl || catalogUrl) && selectedECC()) {
       clearTimeout(searchTimer);
       searchTimer = setTimeout(() => { void loadDocs(true); }, 450);
     }
@@ -327,7 +348,7 @@
 
   documentInput.addEventListener("input", () => {
     refreshChanged();
-    if (catalogUrl) {
+    if (powerAutomateFlowUrl || catalogUrl) {
       clearTimeout(searchTimer);
       searchTimer = setTimeout(() => { void loadDocs(true); }, 450);
     }
@@ -398,6 +419,8 @@
     saveButton.disabled = true;
     setStatus("Formulario listo para revisar. El envío se habilitará al conectar una API segura que oculte Power Automate.");
   }
-  resetDocs("El listado se mostrará al conectar el catálogo externo. Por ahora puedes escribir un documento.");
+  resetDocs(powerAutomateFlowUrl || catalogUrl
+    ? "Selecciona una cabecera ECC para consultar sus documentos."
+    : "El listado se mostrará al conectar el catálogo externo.");
   void loadEcc();
 })();
