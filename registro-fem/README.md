@@ -7,7 +7,7 @@ Ruta: `/registro-fem/` en GitHub Pages. Página independiente del formulario pri
 - **Sin usuario ni contraseña en la página pública**: se retiró el bloque de autenticación a solicitud del propietario.
 - `vECC`: **ComboBox HTML `<select>` sencillo**, sin login, sin opción de escritura manual y sin modalidades adicionales. Sus opciones provendrán del catálogo cuando esté conectado.
 - `vNro_doc`: campo editable para escribir el documento manualmente.
-- **No se muestran datos reales de ECC ni DNI automáticamente**: `config.js` mantiene `catalogUrl: ""`. El desplegable solo muestra el mensaje de selección hasta recibir opciones reales desde un catálogo autorizado; aún no recibe listas de Power Automate.
+- **ComboBox directo preparado para modo ECC**: `app.js` ya puede realizar `POST` con `vCodigo=LISTA_ECC_FAME_COB`, `vModo=ECC`, `iLimite=500` e interpretar solo `ResultSets.Table1[].vECC`. `config.js` tiene `eccOnlyFlowUrl: ""`, pendiente de una URL de flujo exclusiva de ECC y una comprobación de CORS. No se muestran datos reales todavía.
 - **Guardar** continúa deshabilitado porque `apiUrl: ""`; no se realiza ninguna inserción.
 - La firma HTTP de Power Automate nunca se guardó en el repositorio ni en GitHub Pages.
 
@@ -34,7 +34,7 @@ Para DNI de un ECC:
 }
 ```
 
-El SP `DB_MAESTRO_BI.frm.SP_COB_Registro_FEM_Consultar` respondió en ambas modalidades con HTTP 200 y forma `{"ResultSets":{"Table1":[{"vECC":"...","vNro_doc":null}]},"OutputParameters":{}}` (para `DOCUMENTOS`, `vNro_doc` es el DNI). Estas pruebas son del flujo desde PowerShell; **no certifican acceso desde el navegador**.
+El usuario confirmó que el modo `ECC` fue corregido en el SP para devolver **solo `vECC`**. La salida esperada es `{"ResultSets":{"Table1":[{"vECC":"..."}]},"OutputParameters":{}}`. La otra modalidad, `DOCUMENTOS`, sigue permitiendo consultar DNI en el mismo desencadenador multipropósito. Las pruebas PowerShell no certifican CORS ni conexión desde un navegador.
 
 Para registrar FEM, el botón Guardar debe usar el flujo `REGIS_FAME_COB` mediante un endpoint autorizado:
 
@@ -55,7 +55,7 @@ El SP `DB_MAESTRO_BI.frm.SP_COB_Registro_FEM_Registrar` requiere validar pertene
 
 GitHub Pages sirve código público: una URL con parámetro `sig` quedaría al alcance de cualquiera si se pegara en HTML o JS. Además de posible bloqueo CORS, permitiría consultar nombres y DNI reales. La autorización para usar la URL durante pruebas **no** convierte los datos de clientes en información pública.
 
-Por ahora el formulario está abierto y editable, con listas automáticas desactivadas; si se requiere consulta real en web, acordar un endpoint que limite lo que se muestra sin divulgar la firma ni los DNI de terceros.
+Por ahora el formulario permanece público, con un ComboBox ECC sin datos reales y sin login. Para activar la **opción 1 directa**, crear en Power Automate un flujo HTTP exclusivo para listar ECC, sin ramas `DOCUMENTOS`, `REGIS_FAME_COB` ni otros códigos, y comprobar que responde a preflight CORS desde GitHub Pages. Configurar exclusivamente la URL de ese nuevo flujo en `eccOnlyFlowUrl` para activar la carga; la URL será visible públicamente y debe considerarse autorizada para acceso anónimo. No reutilizar el flujo actual multipropósito.
 
 ATD-Relay dispone de un módulo de proxy FEM de lectura en código, pero **no está conectado a la página actual** ni se declara activo; su activación requeriría autorización y configuración separadas.
 
