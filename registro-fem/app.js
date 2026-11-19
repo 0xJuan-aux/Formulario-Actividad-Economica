@@ -5,8 +5,6 @@
   if (!form) return;
 
   const ecc = document.getElementById("vECC");
-  const eccManualWrap = document.getElementById("eccManualWrap");
-  const eccManual = document.getElementById("vECCManual");
   const documentInput = document.getElementById("vNro_doc");
   const comment = document.getElementById("vComentario");
   const docList = document.getElementById("docList");
@@ -68,14 +66,7 @@
   }
 
   function selectedECC() {
-    return ecc.value === "__manual__" ? eccManual.value.trim() : ecc.value.trim();
-  }
-
-  function syncECCManual() {
-    const manual = ecc.value === "__manual__";
-    eccManualWrap.hidden = !manual;
-    eccManual.required = manual;
-    if (manual && document.activeElement === ecc) eccManual.focus();
+    return ecc.value.trim();
   }
 
   function payload() {
@@ -248,20 +239,15 @@
       fragment.appendChild(option);
     }
 
-    const manual = document.createElement("option");
-    manual.value = "__manual__";
-    manual.textContent = "Otra cabecera — escribir manualmente";
-    fragment.appendChild(manual);
     ecc.replaceChildren(fragment);
     if ([...ecc.options].some(option => option.value === previous)) ecc.value = previous;
-    syncECCManual();
   }
 
   async function loadEcc() {
     // No mostrar datos de clientes si el catálogo público seguro no está configurado.
     if (!catalogUrl) {
       fillECCOptions([]);
-      eccHelp.textContent = "Usa el desplegable y selecciona «Otra cabecera» para ingresar un ECC. La lista automática aún no está disponible.";
+      eccHelp.textContent = "La lista de ECC aún no está conectada.";
       return;
     }
     eccHelp.textContent = "Consultando cabeceras ECC...";
@@ -276,11 +262,11 @@
         .filter(Boolean))];
       fillECCOptions(unique);
       eccHelp.textContent = unique.length
-        ? "Elige una cabecera del desplegable o escribe otra."
-        : "La consulta no devolvió ECC; puedes ingresar uno manualmente.";
+        ? "Selecciona una cabecera ECC."
+        : "No hay cabeceras ECC disponibles.";
     } catch {
       fillECCOptions([]);
-      eccHelp.textContent = "Catálogo no disponible. Selecciona «Otra cabecera» para escribir un ECC.";
+      eccHelp.textContent = "La lista de ECC no está disponible.";
     }
   }
 
@@ -303,11 +289,7 @@
     }
   }
 
-  ecc.addEventListener("change", () => {
-    syncECCManual();
-    onECCChange();
-  });
-  eccManual.addEventListener("input", onECCChange);
+  ecc.addEventListener("change", onECCChange);
 
   documentInput.addEventListener("input", () => {
     refreshChanged();
