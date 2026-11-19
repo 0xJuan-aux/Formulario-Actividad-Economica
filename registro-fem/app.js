@@ -109,7 +109,8 @@
     if (!body.vNro_doc) return "Ingresa o selecciona el documento del cliente.";
     if (body.vECC.length > 250 || body.vNro_doc.length > 40) return "Los campos vECC o vNro_doc superan el límite permitido.";
     if (!["Afectado","No Afectado"].includes(body.vEstado_Afectacion)) return "Selecciona Afectado o No Afectado.";
-    if ((body.vComentario?.length || 0) > 2000) return "El comentario no puede superar 2000 caracteres.";
+    if (!body.vComentario?.trim()) return "Escribe un comentario antes de guardar.";
+    if (body.vComentario.length > 2000) return "El comentario no puede superar 2000 caracteres.";
     return "";
   }
 
@@ -362,12 +363,15 @@
   }
 
   function refreshChanged() {
-    if (saving) return;
-    if (savedSnapshot !== null && snapshot(payload()) !== savedSnapshot) {
+    // Guardar solo se activa con ECC, DNI, radiobutton y comentario no vacío.
+    const body = payload();
+    const currentSnapshot = snapshot(body);
+    const alreadySaved = savedSnapshot !== null && currentSnapshot === savedSnapshot;
+    if (!saving && savedSnapshot !== null && !alreadySaved) {
       savedSnapshot = null;
-      saveButton.disabled = !saveUrl;
-      setStatus(saveUrl ? "Cambios pendientes de guardar." : "Conexión para guardar no disponible.");
+      setStatus("Cambios pendientes de guardar.");
     }
+    saveButton.disabled = saving || !saveUrl || Boolean(validate(body)) || alreadySaved;
   }
 
   function onECCChange() {
@@ -515,17 +519,16 @@
     } finally {
       saving = false;
       saveLabel.textContent = "Guardar";
-      saveButton.disabled = !saveUrl || (savedSnapshot !== null && savedSnapshot === snapshot(payload()));
+      refreshChanged();
     }
   });
 
   if (saveUrl) {
-    saveButton.disabled = false;
-    setStatus("Prueba de registro habilitada. Completa los campos y pulsa Guardar.");
+    setStatus("Selecciona ECC, documento, estado de afectación y escribe un comentario para habilitar Guardar.");
   } else {
-    saveButton.disabled = true;
     setStatus("Conexión de registro no disponible.");
   }
+  refreshChanged();
   resetDocs(powerAutomateFlowUrl || catalogUrl
     ? "Selecciona una cabecera ECC para consultar sus documentos."
     : "El listado se mostrará al conectar el catálogo externo.");
