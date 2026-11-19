@@ -36,14 +36,6 @@
   };
   const apiUrl = safeGateway(config.apiUrl);
   const catalogUrl = safeGateway(config.catalogUrl);
-  const authUrl = safeGateway(config.authUrl);
-  const authForm = document.getElementById("femAuthForm");
-  const authUsuario = document.getElementById("femUsuario");
-  const authClave = document.getElementById("femClave");
-  const authStatus = document.getElementById("femAuthStatus");
-  const loginButton = document.getElementById("femLoginBtn");
-  const logoutButton = document.getElementById("femLogoutBtn");
-  let authToken = ""; // Únicamente en memoria; no escribir a localStorage, cookies ni logs.
   const numberFormat = new Intl.NumberFormat("es-PE");
   const maxPage = 150;
 
@@ -107,89 +99,21 @@
     container.replaceChildren(fragment);
   }
 
-  function setAuthStatus(message, style = "") {
-    authStatus.textContent = message;
-    authStatus.className = "auth-status" + (style ? " " + style : "");
-  }
-
-  function resetAuth(reason = "Inicia sesión para acceder a los ECC.") {
-    authToken = "";
-    authForm.hidden = false;
-    logoutButton.hidden = true;
-    ecc.disabled = true;
-    const empty = document.createElement("option");
-    empty.value = "";
-    empty.textContent = "Acceso requerido";
-    ecc.replaceChildren(empty);
-    documentInput.value = "";
-    resetDocs("Inicia sesión para consultar los documentos.");
-    setAuthStatus(reason);
-    eccHelp.textContent = "Solo usuarios autorizados pueden consultar nombres ECC y DNI.";
-  }
-
-  authForm.addEventListener("submit", async event => {
-    event.preventDefault();
-    if (!authUrl || !catalogUrl) {
-      setAuthStatus("Servicio de consulta pendiente de configuración.", "error");
-      return;
-    }
-    loginButton.disabled = true;
-    setAuthStatus("Validando credenciales...");
-    try {
-      const response = await fetch(authUrl, {
-        method: "POST",
-        credentials: "omit",
-        cache: "no-store",
-        headers: { "Content-Type": "application/json", "Accept": "application/json" },
-        body: JSON.stringify({
-          usuario: authUsuario.value.trim(),
-          contrasena: authClave.value
-        })
-      });
-      const data = await response.json().catch(() => null);
-      if (!response.ok || data?.bResultado !== true ||
-          typeof data?.access_token !== "string" || !data.access_token) {
-        setAuthStatus("Acceso no autorizado o servicio no disponible.", "error");
-        return;
-      }
-      authToken = data.access_token;
-      authClave.value = "";
-      authForm.hidden = true;
-      logoutButton.hidden = false;
-      setAuthStatus("Sesión autorizada. Consultando los ECC...", "success");
-      await loadEcc();
-    } catch {
-      setAuthStatus("No fue posible conectar con el servicio de autenticación.", "error");
-    } finally {
-      loginButton.disabled = false;
-    }
-  });
-
-  logoutButton.addEventListener("click", () => {
-    resetAuth("Sesión cerrada. Inicia sesión para consultar.");
-  });
-
   // Se llama SOLO al proxy HTTPS autenticado. Nunca a la URL firmada de Power Automate.
   // El proxy conserva la firma como secreto y devuelve el contrato SQL ResultSets.Table1.
   async function queryCatalog(requestBody, signal) {
-    if (!authToken) throw new Error("Se requiere autenticación.");
     const response = await fetch(catalogUrl, {
       method: "POST",
       credentials: "include",
       cache: "no-store",
       headers: {
         "Content-Type": "application/json",
-        "Accept": "application/json",
-        "Authorization": "Bearer " + authToken
+        "Accept": "application/json"
       },
       body: JSON.stringify(requestBody),
       signal
     });
     const body = await response.json().catch(() => null);
-    if (response.status === 401) {
-      resetAuth("La sesión expiró. Inicia sesión nuevamente.");
-      throw new Error("Sesión vencida.");
-    }
     if (!response.ok || !body || body.bResultado === false)
       throw new Error("No se pudo consultar el catálogo autorizado.");
     if (!Array.isArray(body?.ResultSets?.Table1))
@@ -246,7 +170,7 @@
 
   async function loadDocs(first = true) {
     const selectedECC = ecc.value.trim();
-    if (!catalogUrl || !authToken || !selectedECC) return;
+    if (!catalogUrl || !selectedECC) return;
     const version = ++requestVersion;
     if (first) {
       queryAbort?.abort();
@@ -295,23 +219,14 @@
   }
 
   async function loadEcc() {
-    const placeholder = document.createElement("option");
-    placeholder.value = "";
-    placeholder.textContent = "Selecciona un ECC";
-    ecc.replaceChildren(placeholder);
-    ecc.disabled = true;
-    if (!catalogUrl || !authUrl) {
-      placeholder.textContent = "Catálogo ECC pendiente de conexión";
-      eccHelp.textContent = "El catálogo seguro necesita configuración en el servidor.";
+    // El formulario es público y no requiere credenciales de acceso.
+    // No se consulta un flujo que contenga DNI si la API segura no está configurada.
+    if (!catalogUrl) {
+      fillOptions(eccList, []);
+      eccHelp.textContent = "Puedes escribir la cabecera ECC. La lista automática aún no está disponible.";
       return;
     }
-    if (!authToken) {
-      placeholder.textContent = "Inicia sesión para listar ECC";
-      eccHelp.textContent = "Solo usuarios autorizados pueden consultar el catálogo ECC.";
-      return;
-    }
-    placeholder.textContent = "Cargando ECC...";
-    eccHelp.textContent = "Consultando cabeceras ECC autorizadas...";
+    eccHelp.textContent = "Consultando las cabeceras disponibles...";
     try {
       const rows = await queryCatalog({
         vCodigo: "LISTA_ECC_FAME_COB",
@@ -321,25 +236,12 @@
       const unique = [...new Set(rows
         .map(row => typeof row?.vECC === "string" ? row.vECC.trim() : "")
         .filter(Boolean))];
-      unique.forEach(value => {
-        const option = document.createElement("option");
-        option.value = value;
-        option.textContent = value;
-        ecc.appendChild(option);
-      });
-      if (!unique.length) {
-        placeholder.textContent = "No hay ECC disponibles";
-        eccHelp.textContent = "La consulta no devolvió cabeceras ECC.";
-        return;
-      }
-      placeholder.textContent = "Selecciona un ECC de la lista";
-      ecc.disabled = false;
-      eccHelp.textContent = "Se cargaron " + numberFormat.format(unique.length) +
-        " cabeceras autorizadas. Elige una para consultar sus documentos." +
-        (rows.length >= 500 ? " La respuesta podría estar limitada a las primeras 500." : "");
+      fillOptions(eccList, unique);
+      eccHelp.textContent = unique.length
+        ? "Selecciona una cabecera sugerida o ingresa una manualmente."
+        : "No hay cabeceras disponibles. Puedes ingresar una manualmente.";
     } catch {
-      placeholder.textContent = "No fue posible cargar los ECC";
-      eccHelp.textContent = "Error al consultar ECC. Revisa la conexión del proxy autorizado.";
+      eccHelp.textContent = "La lista automática no está disponible; puedes escribir el ECC manualmente.";
     }
   }
 
@@ -352,7 +254,7 @@
     }
   }
 
-  ecc.addEventListener("change", () => {
+  ecc.addEventListener("input", () => {
     documentInput.value = "";
     resetDocs(catalogUrl ? "Selecciona un vECC para consultar sus documentos." : "Catálogo de documentos pendiente de conexión.");
     refreshChanged();
@@ -436,10 +338,5 @@
     setStatus("Formulario listo para revisar. El envío se habilitará al conectar una API segura que oculte Power Automate.");
   }
   resetDocs("El listado se mostrará al conectar el catálogo externo. Por ahora puedes escribir un documento.");
-  if (!authUrl || !catalogUrl) {
-    setAuthStatus("El acceso seguro está pendiente de habilitarse en Render.", "error");
-  } else {
-    setAuthStatus("Inicia sesión con una cuenta autorizada para consultar ECC y DNI.");
-  }
   void loadEcc();
 })();
