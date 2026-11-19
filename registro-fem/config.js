@@ -1,13 +1,11 @@
 /*
-  Configuración pública SIN credenciales.
-  El backend privado ATD-Relay conserva la URL firmada de Power Automate
-  en ATD_FEM_FLOW_URL (variable de entorno del servidor Render).
-  No pegar la URL de Power Automate en JavaScript/HTML/GitHub.
-  La consulta exige iniciar sesión con un usuario FEM autorizado.
-  El formulario Guardar continúa inhabilitado; esta integración es SOLO LECTURA.
+  Registro FEM: página pública sin usuario ni contraseña.
+  NO colocar aquí firmas de Power Automate, claves SQL o datos de clientes.
+  El campo ECC es editable y admite sugerencias de un catálogo autorizado
+  únicamente cuando exista un servicio que pueda publicarlas de forma segura.
+  La consulta de DNI y el botón Guardar siguen deshabilitados sin API segura.
 */
 window.REGISTRO_FEM_PUBLIC_CONFIG = Object.freeze({
   apiUrl: "",
-  authUrl: "https://atd-relay.onrender.com/api/fem/login",
-  catalogUrl: "https://atd-relay.onrender.com/api/fem/catalogo"
+  catalogUrl: ""
 });
