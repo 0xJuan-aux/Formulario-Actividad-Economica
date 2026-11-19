@@ -6,7 +6,9 @@
     - LISTA_DNI_FAME_COB, vModo=DOCUMENTOS: documentos del vECC elegido
   AVISO: el enlace firmado es publico al estar en GitHub Pages.
   Se requiere CORS compatible con https://0xjuan-aux.github.io.
-  apiUrl y catalogUrl siguen vacios; Guardar NO esta habilitado.
+  apiUrl y catalogUrl siguen vacios; Guardar usa la URL firmada existente
+  con vCodigo=REGIS_FAME_COB. El backend debe verificar ECC/DNI y acceso:
+  el navegador no es una fuente de identidad confiable.
 */
 window.REGISTRO_FEM_PUBLIC_CONFIG = Object.freeze({
   apiUrl: "",
