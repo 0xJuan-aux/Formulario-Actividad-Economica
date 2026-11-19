@@ -1,11 +1,15 @@
 /*
-  Registro FEM: página pública sin usuario ni contraseña.
-  NO colocar aquí firmas de Power Automate, claves SQL o datos de clientes.
-  El campo ECC es editable y admite sugerencias de un catálogo autorizado
-  únicamente cuando exista un servicio que pueda publicarlas de forma segura.
-  La consulta de DNI y el botón Guardar siguen deshabilitados sin API segura.
+  Registro FEM: formulario publico, sin usuario ni contrasena.
+  eccOnlyFlowUrl: URL HTTPS de un flujo Power Automate EXCLUSIVO PARA ECC
+                  (debe responder solo vECC y no permitir DOCUMENTOS/REGISTRO).
+  NO reutilizar aqui el desencadenador multiproposito de prueba:
+  esa misma firma tambien habilita solicitudes de DNI.
+  GitHub Pages publica este archivo, incluida cualquier URL que se agregue.
+  El flujo exclusivo debe admitir CORS desde https://0xjuan-aux.github.io.
+  apiUrl y catalogUrl permanecen vacios: el guardado y consulta DNI no se habilitan.
 */
 window.REGISTRO_FEM_PUBLIC_CONFIG = Object.freeze({
   apiUrl: "",
-  catalogUrl: ""
+  catalogUrl: "",
+  eccOnlyFlowUrl: ""
 });
