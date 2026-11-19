@@ -45,7 +45,7 @@ Para registrar FEM, el botón Guardar envía directamente al caso `REGIS_FAME_CO
   "vECC": "<ECC>",
   "vNro_doc": "<documento>",
   "vEstado_Afectacion": "Afectado",
-  "vComentario": "Opcional"
+  "vComentario": "Observación obligatoria desde el formulario"
 }
 ```
 
@@ -97,3 +97,7 @@ La captura enviada desde GitHub Pages mostró «No se pudo confirmar el registro
 Comprobación ATD145 de solo lectura `COB_FEM_DIAG_REGISTRO_20261118_01`: **0** registros recientes que cumplan simultáneamente `vComentario='Prueba'`, `vEstado_Afectacion='Afectado'`, canal `EXTERNO` y fecha UTC de las últimas dos horas. Una segunda consulta de solo lectura `COB_FEM_DIAG_RESUMEN_20261118_01` obtuvo **0 registros totales en la tabla**, por lo que hasta ese instante no se había confirmado ninguna inserción (y no era solo un problema de filtrar el comentario). Se desconoce todavía qué acción del flujo falló.
 
 **Siguiente diagnóstico:** antes de reintentar, mirar el historial de la ejecución reciente de Power Automate y el estado de las acciones `registrar fem` y `out reg fem`, sin compartir información personal. Si `registrar fem` está completada pero la página no confirma, revisar la forma de la salida de `out reg fem`; si está fallida, revisar el error del conector SQL. La URL firmada permite escritura anónima y debe protegerse antes de uso real.
+
+## Condiciones de habilitación de Guardar (19/11/2026)
+
+Sin modificar el SP ni el contrato Power Automate, el botón Guardar está inicialmente deshabilitado y solo se activa cuando el formulario tiene ECC y documento, se ha elegido exactamente un estado `Afectado` o `No Afectado`, y `vComentario` contiene texto no vacío después de quitar espacios. La etiqueta del comentario presenta asterisco de obligatorio; el control de habilitación se recalcula en cambios del ComboBox, selección de documento, radiobutton y escritura del comentario. Durante un envío se deshabilita Guardar y después de un registro exitoso permanece inactivo para los mismos valores, evitando un segundo envío involuntario. El SP conserva su parámetro `@vComentario` técnicamente nullable; esta obligatoriedad se aplica en la interfaz.
