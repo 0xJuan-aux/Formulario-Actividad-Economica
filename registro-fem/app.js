@@ -389,6 +389,15 @@
     refreshChanged();
   }
 
+  function prepareNextRegistration() {
+    // Solo tras confirmación SQL; conservar ECC y listado de documentos.
+    documentInput.value = "";
+    docItems.querySelectorAll('input[name="documentChoice"]').forEach(radio => {
+      radio.checked = false;
+    });
+    onDocumentValueChanged(true); // Limpia afectación, comentario y contador.
+  }
+
   function onECCChange() {
     documentInput.value = "";
     onDocumentValueChanged(true);
@@ -509,9 +518,10 @@
 
       pendingSubmission = null;
       if (snapshot(payload()) === signature) {
-        savedSnapshot = signature;
+        savedSnapshot = null; // Permitir un nuevo envío con un UUID diferente.
+        prepareNextRegistration();
         setStatus((estado === "YA_REGISTRADO" ? "Solicitud ya registrada" : "Registro guardado correctamente") +
-          ". Código FEM: " + code + ".", "success");
+          ". Código FEM: " + code + ". Selecciona otro DNI para continuar.", "success");
       } else {
         savedSnapshot = null;
         setStatus("Registro " + code + " guardado. Hay cambios nuevos pendientes.", "success");
