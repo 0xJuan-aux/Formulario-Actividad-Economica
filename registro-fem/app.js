@@ -115,12 +115,34 @@
     return "";
   }
 
+  // El valor siempre es vNro_doc; el nombre del cliente es SOLO para mostrar.
+  function documentNumber(item) {
+    return typeof item === "string" ? item.trim() :
+      (typeof item?.vNro_doc === "string" ? item.vNro_doc.trim() : "");
+  }
+
+  function documentClient(item) {
+    return typeof item?.vCliente === "string" ? item.vCliente.trim() : "";
+  }
+
+  function documentLabel(item) {
+    const number = documentNumber(item);
+    const client = documentClient(item);
+    return client ? number + " - " + client : number;
+  }
+
   function fillOptions(container, items) {
     const fragment = document.createDocumentFragment();
     for (const item of items) {
-      if (typeof item !== "string" || !item.trim()) continue;
+      const number = documentNumber(item);
+      if (!number) continue;
       const option = document.createElement("option");
-      option.value = item;
+      option.value = number;
+      const client = documentClient(item);
+      if (client) {
+        option.label = documentLabel(item);
+        option.dataset.cliente = client;
+      }
       fragment.appendChild(option);
     }
     container.replaceChildren(fragment);
@@ -174,8 +196,9 @@
     const list = append ? docItems.querySelector(".document-list") : null;
     const section = list || document.createElement("div");
     section.className = "document-list";
-    for (const number of documents) {
-      if (typeof number !== "string" || !number.trim()) continue;
+    for (const item of documents) {
+      const number = documentNumber(item);
+      if (!number) continue;
       const label = document.createElement("label");
       label.className = "doc-choice";
       const radio = document.createElement("input");
@@ -184,17 +207,29 @@
       radio.value = number;
       radio.checked = documentInput.value === number;
       radio.addEventListener("change", () => {
-        documentInput.value = number;
+        documentInput.value = number; // No guardar el texto concatenado.
         onDocumentValueChanged();
       });
       const span = document.createElement("span");
-      span.textContent = number;
+      span.textContent = documentLabel(item);
       label.append(radio, span);
       section.appendChild(label);
     }
     if (!list) docItems.replaceChildren(section);
-    const options = [...docList.querySelectorAll("option")].map(x => x.value).concat(documents);
-    fillOptions(docList, [...new Set(options)]);
+    const existing = [...docList.querySelectorAll("option")].map(x => ({
+      vNro_doc: x.value,
+      vCliente: x.dataset.cliente || ""
+    }));
+    const unique = new Map();
+    for (const item of existing.concat(documents)) {
+      const number = documentNumber(item);
+      if (!number) continue;
+      const previous = unique.get(number);
+      if (!previous || (!documentClient(previous) && documentClient(item))) {
+        unique.set(number, item);
+      }
+    }
+    fillOptions(docList, [...unique.values()]);
   }
 
   async function loadDocs(first = true) {
@@ -256,17 +291,19 @@
         rows = await queryCatalog(requestBody, queryAbort.signal);
       }
       if (version !== requestVersion || selectedECC() !== selectedECCValue) return;
-      const numbers = rows
-        .map(row => typeof row?.vNro_doc === "string" ? row.vNro_doc.trim() : "")
-        .filter(Boolean);
-      // Evitar mostrar un DNI que no coincida si el flujo omitió @vBuscar.
-      // Para buscar en todo el catálogo, el filtro también debe aplicarse en SQL.
+      const documents = rows
+        .map(row => ({
+          vNro_doc: typeof row?.vNro_doc === "string" ? row.vNro_doc.trim() : "",
+          vCliente: typeof row?.vCliente === "string" ? row.vCliente.trim() : ""
+        }))
+        .filter(row => row.vNro_doc);
+      // Buscar siempre por DNI, nunca por el texto concatenado.
       const matches = activeDocFilter
-        ? numbers.filter(number => number.includes(activeDocFilter))
-        : numbers;
+        ? documents.filter(row => row.vNro_doc.includes(activeDocFilter))
+        : documents;
       const page = matches.slice(0, maxPage);
       hasMore = matches.length > maxPage;
-      docsAfter = page.length ? page[page.length - 1] : "";
+      docsAfter = page.length ? page[page.length - 1].vNro_doc : "";
       docLoaded += page.length;
 
       if (!activeDocFilter) {
@@ -423,7 +460,7 @@
     const available = browseCache.ecc === selectedECC()
       ? browseCache.documents : [];
     const localMatches = term
-      ? available.filter(number => number.includes(term))
+      ? available.filter(row => row.vNro_doc.includes(term))
       : available;
 
     // Respuesta inmediata, sin pedir a Power Automate por cada tecla.
