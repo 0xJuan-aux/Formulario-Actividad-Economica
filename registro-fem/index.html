@@ -6,9 +6,9 @@
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta name="description" content="Formulario externo de Registro FEM de Cobranzas.">
   <title>Registro FEM | AtencionDigital</title>
-  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./styles.css?v=20261124-pages1">
   <script defer src="./config.js"></script>
-  <script defer src="./app.js"></script>
+  <script defer src="./app.js?v=20261124-pages1"></script>
 </head>
 <body>
   <div class="top-line" aria-hidden="true"></div>
@@ -66,12 +66,13 @@
             <input id="vNro_doc" name="vNro_doc" list="docList" maxlength="40" autocomplete="off"
                    placeholder="Escribe o busca el número de documento" required>
             <datalist id="docList"></datalist>
-            <div class="list-top"><strong>Documentos disponibles</strong><span class="counter" id="docCount">0 cargados</span></div>
+            <div class="list-top"><strong>Documentos disponibles</strong><span class="counter" id="docCount">0 documentos</span></div>
             <div class="document-items" id="documentItems" aria-live="polite">
               <p class="empty-state" id="docsEmpty">La consulta externa de documentos aún no está conectada. Puedes preparar el formulario ingresando un documento manualmente.</p>
             </div>
             <div class="list-footer">
-              <button type="button" class="btn-secondary" id="loadMore" hidden>Cargar más documentos</button>
+              <nav id="docPagination" class="doc-pagination" aria-label="Páginas de documentos" hidden></nav>
+              <button type="button" class="btn-secondary" id="refreshDocs" disabled>Actualizar lista</button>
               <p id="docsMessage" class="helper" role="status"></p>
             </div>
           </section>
@@ -129,3 +130,4 @@
   </main>
 </body>
 </html>
+

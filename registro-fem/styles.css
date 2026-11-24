@@ -94,3 +94,13 @@ textarea {min-height:210px;resize:vertical;line-height:1.55}
 
 /* ComboBox ECC simple. */
 #vECC {cursor:pointer;appearance:auto}
+
+
+/* Paginación local del catálogo completo de la ECC seleccionada. */
+.doc-pagination {display:flex;flex-wrap:wrap;align-items:center;gap:5px;margin:12px 0}
+.doc-pagination[hidden] {display:none}
+.page-button {min-width:32px;min-height:36px;padding:6px 9px;border:1px solid #e3d6d9;border-radius:7px;background:#fff;color:#5e2530;font-size:.77rem;font-weight:750}
+.page-button:hover:not(:disabled) {background:var(--red-pale);border-color:var(--red)}
+.page-button[aria-current="page"] {background:var(--red);border-color:var(--red);color:#fff}
+.page-button:disabled,.btn-secondary:disabled {opacity:.45;cursor:not-allowed}
+.page-gap {color:var(--muted);padding:0 2px}

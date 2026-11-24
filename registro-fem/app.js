@@ -12,7 +12,8 @@
   const docCount = document.getElementById("docCount");
   const docsMessage = document.getElementById("docsMessage");
   const eccHelp = document.getElementById("eccHelp");
-  const loadMore = document.getElementById("loadMore");
+  const pagination = document.getElementById("docPagination");
+  const refreshDocsButton = document.getElementById("refreshDocs");
   const charCount = document.getElementById("charCount");
   const saveButton = document.getElementById("saveButton");
   const saveLabel = document.getElementById("saveLabel");
@@ -54,15 +55,14 @@
   const saveUrl = apiUrl || powerAutomateFlowUrl;
   const isDirectSave = !apiUrl && Boolean(powerAutomateFlowUrl);
   const numberFormat = new Intl.NumberFormat("es-PE");
-  const maxPage = 10; // Prueba: máximo 10 documentos visibles por página.
-
-  let docsAfter = "";
-  let activeDocFilter = "";
-  // Memoria temporal por ECC: solamente páginas que el usuario ya consultó.
-  // Nunca descargar todos los DNI automáticamente a una página pública.
-  let browseCache = { ecc: "", documents: [], after: "", more: false };
-  let hasMore = false;
-  let docLoaded = 0;
+  const maxPage = 10;
+  const downloadBatch = 500;
+  const cacheLifetimeMs = 5 * 60 * 1000;
+  // Una copia temporal por ECC, únicamente en esta pestaña.
+  const documentCache = new Map();
+  let docsPage = 1;
+  let docSearch = "";
+  let docsLoading = false;
   let requestVersion = 0;
   let queryAbort = null;
   let searchTimer = null;
@@ -180,21 +180,21 @@
   function resetDocs(message) {
     requestVersion++;
     queryAbort?.abort();
-    docsAfter = "";
-    activeDocFilter = "";
-    browseCache = { ecc: "", documents: [], after: "", more: false };
-    docLoaded = 0;
-    hasMore = false;
-    loadMore.hidden = true;
-    docCount.textContent = "0 cargados";
+    docsLoading = false;
+    docsPage = 1;
+    docSearch = "";
+    pagination.replaceChildren();
+    pagination.hidden = true;
+    refreshDocsButton.disabled = !selectedECC();
+    docItems.removeAttribute("aria-busy");
+    docCount.textContent = "0 documentos";
     docsMessage.textContent = "";
     fillOptions(docList, []);
     documentEmpty(message);
   }
 
-  function displayDocs(documents, append) {
-    const list = append ? docItems.querySelector(".document-list") : null;
-    const section = list || document.createElement("div");
+  function displayDocs(documents) {
+    const section = document.createElement("div");
     section.className = "document-list";
     for (const item of documents) {
       const number = documentNumber(item);
@@ -207,7 +207,7 @@
       radio.value = number;
       radio.checked = documentInput.value === number;
       radio.addEventListener("change", () => {
-        documentInput.value = number; // No guardar el texto concatenado.
+        documentInput.value = number;
         onDocumentValueChanged();
       });
       const span = document.createElement("span");
@@ -215,121 +215,159 @@
       label.append(radio, span);
       section.appendChild(label);
     }
-    if (!list) docItems.replaceChildren(section);
-    const existing = [...docList.querySelectorAll("option")].map(x => ({
-      vNro_doc: x.value,
-      vCliente: x.dataset.cliente || ""
-    }));
-    const unique = new Map();
-    for (const item of existing.concat(documents)) {
-      const number = documentNumber(item);
-      if (!number) continue;
-      const previous = unique.get(number);
-      if (!previous || (!documentClient(previous) && documentClient(item))) {
-        unique.set(number, item);
-      }
-    }
-    fillOptions(docList, [...unique.values()]);
+    docItems.replaceChildren(section);
+    docItems.scrollTop = 0;
   }
 
-  async function loadDocs(first = true) {
-    const selectedECCValue = selectedECC();
-    if ((!powerAutomateFlowUrl && !catalogUrl) || !selectedECCValue) return;
-    if (!first && !hasMore) return;
-    const version = ++requestVersion;
-    if (first) {
-      queryAbort?.abort();
-      queryAbort = new AbortController();
-      docsAfter = "";
-      const typed = documentInput.value.trim().slice(0, 40);
-      activeDocFilter = typed.length >= 4 ? typed : "";
-      docLoaded = 0;
-      hasMore = false;
-      loadMore.hidden = true;
-      docCount.textContent = "0 cargados";
-      fillOptions(docList, []);
-      documentEmpty(activeDocFilter
-        ? "Buscando documentos que contengan: " + activeDocFilter
-        : "Consultando documentos del ECC seleccionado...");
-    }
-
-    loadMore.disabled = true;
-    docsMessage.textContent = "Consultando documentos...";
-    const requestBody = {
-      vCodigo: "LISTA_DNI_FAME_COB",
-      vModo: "DOCUMENTOS",
-      vECC: selectedECCValue,
-      iLimite: maxPage + 1
+  function renderPagination(totalPages) {
+    pagination.replaceChildren();
+    pagination.hidden = totalPages <= 1;
+    if (totalPages <= 1) return;
+    const addButton = (text, page, disabled = false) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "page-button";
+      button.textContent = text;
+      button.disabled = disabled;
+      button.setAttribute("aria-label", /^\d+$/.test(text) ? "Página " + text : text);
+      if (page === docsPage && /^\d+$/.test(text)) button.setAttribute("aria-current", "page");
+      button.addEventListener("click", () => {
+        docsPage = page;
+        renderDocs();
+        const active = pagination.querySelector('[aria-current="page"]');
+        active?.focus();
+      });
+      pagination.appendChild(button);
     };
-    // Misma coincidencia parcial en todas las páginas, no solo en la primera.
-    // El caso LISTA_DNI_FAME_COB debe mapear vBuscar -> @vBuscar del SP.
-    if (activeDocFilter) requestBody.vBuscar = activeDocFilter;
-    if (!first && docsAfter) requestBody.vDespues = docsAfter;
-
-    try {
-      // La clave vECC del JSON se mapea al parámetro @vECC del SP mediante el caso Power Automate.
-      // El usuario solicitó LISTA_DNI_FAME_COB, no cambiar el caso de ECC.
-      let rows;
-      if (powerAutomateFlowUrl) {
-        const response = await fetch(powerAutomateFlowUrl, {
-          method: "POST",
-          mode: "cors",
-          credentials: "omit",
-          cache: "no-store",
-          headers: {
-            "Content-Type": "application/json",
-            "Accept": "application/json"
-          },
-          body: JSON.stringify(requestBody),
-          signal: queryAbort.signal
-        });
-        const data = await response.json().catch(() => null);
-        if (!response.ok || !Array.isArray(data?.ResultSets?.Table1))
-          throw new Error("Respuesta DOCUMENTOS no disponible.");
-        rows = data.ResultSets.Table1;
-      } else {
-        rows = await queryCatalog(requestBody, queryAbort.signal);
+    addButton("Anterior", docsPage - 1, docsPage === 1);
+    const pages = new Set([1, totalPages]);
+    for (let page = Math.max(1, docsPage - 1); page <= Math.min(totalPages, docsPage + 1); page++) pages.add(page);
+    if (docsPage <= 3) for (let page = 1; page <= Math.min(4, totalPages); page++) pages.add(page);
+    if (docsPage >= totalPages - 2) for (let page = Math.max(1, totalPages - 3); page <= totalPages; page++) pages.add(page);
+    let previous = 0;
+    for (const page of [...pages].sort((a, b) => a - b)) {
+      if (previous && page - previous > 1) {
+        const gap = document.createElement("span");
+        gap.className = "page-gap";
+        gap.textContent = "…";
+        gap.setAttribute("aria-hidden", "true");
+        pagination.appendChild(gap);
       }
-      if (version !== requestVersion || selectedECC() !== selectedECCValue) return;
-      const documents = rows
-        .map(row => ({
-          vNro_doc: typeof row?.vNro_doc === "string" ? row.vNro_doc.trim() : "",
-          vCliente: typeof row?.vCliente === "string" ? row.vCliente.trim() : ""
-        }))
-        .filter(row => row.vNro_doc);
-      // Buscar siempre por DNI, nunca por el texto concatenado.
-      const matches = activeDocFilter
-        ? documents.filter(row => row.vNro_doc.includes(activeDocFilter))
-        : documents;
-      const page = matches.slice(0, maxPage);
-      hasMore = matches.length > maxPage;
-      docsAfter = page.length ? page[page.length - 1].vNro_doc : "";
-      docLoaded += page.length;
-
-      if (!activeDocFilter) {
-        if (first || browseCache.ecc !== selectedECCValue) {
-          browseCache = { ecc: selectedECCValue, documents: [], after: "", more: false };
-        }
-        browseCache.documents.push(...page);
-        browseCache.after = docsAfter;
-        browseCache.more = hasMore;
-      }
-      if (page.length) displayDocs(page, !first);
-      else if (first) documentEmpty(activeDocFilter
-        ? "No se encontraron coincidencias con ese documento."
-        : "No se encontraron documentos pendientes para este ECC.");
-      docCount.textContent = numberFormat.format(docLoaded) +
-        (hasMore ? "+ cargados" : " cargados");
-      loadMore.hidden = !hasMore;
-      docsMessage.textContent = hasMore ? "Puedes cargar más documentos." : "";
-    } catch (error) {
-      if (error?.name === "AbortError" || version !== requestVersion) return;
-      docsMessage.textContent = "No se pudo consultar la lista de documentos.";
-      if (first) documentEmpty("La consulta autorizada de documentos no está disponible.");
-      loadMore.hidden = true;
-    } finally {
-      if (version === requestVersion) loadMore.disabled = false;
+      addButton(String(page), page);
+      previous = page;
     }
+    addButton("Siguiente", docsPage + 1, docsPage === totalPages);
+  }
+
+  function renderDocs() {
+    const entry = documentCache.get(selectedECC());
+    if (!entry || docsLoading) return;
+    const matches = docSearch
+      ? entry.documents.filter(row => row.vNro_doc.includes(docSearch))
+      : entry.documents;
+    const totalPages = Math.max(1, Math.ceil(matches.length / maxPage));
+    docsPage = Math.max(1, Math.min(docsPage, totalPages));
+    const start = (docsPage - 1) * maxPage;
+    const page = matches.slice(start, start + maxPage);
+    if (page.length) displayDocs(page);
+    else documentEmpty(docSearch ? "No se encontraron coincidencias con ese documento." : "No se encontraron documentos pendientes para este ECC.");
+    // Las sugerencias también buscan en el catálogo completo; limitar solo el DOM.
+    fillOptions(docList, matches.slice(0, 100));
+    docCount.textContent = numberFormat.format(matches.length) + (docSearch ? (matches.length === 1 ? " coincidencia" : " coincidencias") : (matches.length === 1 ? " documento" : " documentos"));
+    docsMessage.textContent = matches.length
+      ? "Mostrando " + numberFormat.format(start + 1) + "–" + numberFormat.format(start + page.length) +
+        " de " + numberFormat.format(matches.length) + ". Página " + docsPage + " de " + totalPages + "."
+      : "";
+    renderPagination(totalPages);
+    refreshDocsButton.disabled = false;
+  }
+
+  async function fetchDocumentBatch(eccValue, after, signal) {
+    const requestBody = { vCodigo: "LISTA_DNI_FAME_COB", vModo: "DOCUMENTOS", vECC: eccValue, iLimite: downloadBatch };
+    if (after) requestBody.vDespues = after;
+    if (!powerAutomateFlowUrl) return queryCatalog(requestBody, signal);
+    const response = await fetch(powerAutomateFlowUrl, {
+      method: "POST", mode: "cors", credentials: "omit", cache: "no-store",
+      headers: { "Content-Type": "application/json", "Accept": "application/json" },
+      body: JSON.stringify(requestBody), signal
+    });
+    const data = await response.json().catch(() => null);
+    if (!response.ok || !Array.isArray(data?.ResultSets?.Table1)) throw new Error("CATALOGO_NO_DISPONIBLE");
+    return data.ResultSets.Table1;
+  }
+
+  async function loadDocs(forceRefresh = false) {
+    const eccValue = selectedECC();
+    if ((!powerAutomateFlowUrl && !catalogUrl) || !eccValue) return;
+    const cached = documentCache.get(eccValue);
+    if (!forceRefresh && cached && Date.now() - cached.loadedAt < cacheLifetimeMs) {
+      renderDocs();
+      return;
+    }
+    const version = ++requestVersion;
+    queryAbort?.abort();
+    queryAbort = new AbortController();
+    const signal = queryAbort.signal;
+    docsLoading = true;
+    pagination.hidden = true;
+    refreshDocsButton.disabled = true;
+    docItems.setAttribute("aria-busy", "true");
+    fillOptions(docList, []);
+    documentEmpty("Descargando todos los documentos pendientes del ECC...");
+    docCount.textContent = "0 descargados";
+    docsMessage.textContent = "Preparando la lista completa...";
+    const downloaded = new Map();
+    const cursors = new Set();
+    let after = "";
+    try {
+      // Continuar hasta una página vacía: el flujo puede usar un lote menor que el solicitado.
+      while (true) {
+        const rows = await fetchDocumentBatch(eccValue, after, signal);
+        if (signal.aborted || version !== requestVersion || selectedECC() !== eccValue) return;
+        if (!rows.length) break;
+        const sizeBefore = downloaded.size;
+        for (const row of rows) {
+          const number = documentNumber(row);
+          if (!number) throw new Error("DOCUMENTO_INVALIDO");
+          downloaded.set(number, { vNro_doc: number, vCliente: documentClient(row) });
+        }
+        const next = documentNumber(rows[rows.length - 1]);
+        if (!next || cursors.has(next) || downloaded.size === sizeBefore) throw new Error("PAGINACION_SIN_AVANCE");
+        cursors.add(next);
+        after = next;
+        docCount.textContent = numberFormat.format(downloaded.size) + " descargados";
+        docsMessage.textContent = "Descargando lista completa: " + numberFormat.format(downloaded.size) + " documentos...";
+      }
+      // Un guardado que termina durante la descarga también debe excluirse.
+      for (const number of savedDocuments) downloaded.delete(number);
+      documentCache.set(eccValue, { documents: [...downloaded.values()], loadedAt: Date.now() });
+      docsLoading = false;
+      renderDocs();
+    } catch (error) {
+      if (signal.aborted || version !== requestVersion) return;
+      docsLoading = false;
+      documentCache.delete(eccValue);
+      fillOptions(docList, []);
+      docCount.textContent = "Carga incompleta";
+      documentEmpty("No se pudo descargar la lista completa. Pulsa Actualizar lista para reintentar.");
+      docsMessage.textContent = error?.message === "PAGINACION_SIN_AVANCE"
+        ? "La consulta no está avanzando entre lotes. Es necesario revisar su paginación."
+        : "No se pudo completar la consulta de documentos.";
+    } finally {
+      if (version === requestVersion) {
+        docsLoading = false;
+        docItems.removeAttribute("aria-busy");
+        refreshDocsButton.disabled = !selectedECC();
+      }
+    }
+  }
+
+  // Solo confirmaciones SQL de esta pestaña; el filtro del SP sigue siendo la fuente de verdad.
+  const savedDocuments = new Set();
+  function removeSavedDocument(number) {
+    savedDocuments.add(number);
+    for (const entry of documentCache.values()) entry.documents = entry.documents.filter(row => row.vNro_doc !== number);
+    if (!docsLoading) renderDocs();
   }
 
   function fillECCOptions(items) {
@@ -441,7 +479,7 @@
     resetDocs(powerAutomateFlowUrl || catalogUrl ? "Consultando documentos del ECC seleccionado..." : "Catálogo de documentos pendiente de conexión.");
     if ((powerAutomateFlowUrl || catalogUrl) && selectedECC()) {
       clearTimeout(searchTimer);
-      searchTimer = setTimeout(() => { void loadDocs(true); }, 450);
+      searchTimer = setTimeout(() => { void loadDocs(); }, 150);
     }
   }
 
@@ -449,52 +487,19 @@
 
   documentInput.addEventListener("input", () => {
     onDocumentValueChanged();
-    if ((!powerAutomateFlowUrl && !catalogUrl) || !selectedECC()) return;
-
-    clearTimeout(searchTimer);
-    queryAbort?.abort();
-    queryAbort = new AbortController();
-    requestVersion++;
-
-    const term = documentInput.value.trim().slice(0, 40);
-    const available = browseCache.ecc === selectedECC()
-      ? browseCache.documents : [];
-    const localMatches = term
-      ? available.filter(row => row.vNro_doc.includes(term))
-      : available;
-
-    // Respuesta inmediata, sin pedir a Power Automate por cada tecla.
-    fillOptions(docList, []);
-    if (localMatches.length) displayDocs(localMatches, false);
-    else documentEmpty(term
-      ? "Sin coincidencias entre los documentos ya cargados."
-      : "No se han cargado documentos para este ECC.");
-
-    activeDocFilter = "";
-    docsAfter = browseCache.after;
-    hasMore = browseCache.more;
-    docLoaded = available.length;
-    docCount.textContent = numberFormat.format(localMatches.length) +
-      (term ? " coincidencias locales" : " cargados");
-    loadMore.disabled = false;
-    loadMore.hidden = Boolean(term) || !hasMore;
-
-    if (term.length >= 4) {
-      docsMessage.textContent = "Buscando también en los demás documentos...";
-      // Una consulta tras una pausa: búsqueda SQL para valores aún no cargados.
-      searchTimer = setTimeout(() => { void loadDocs(true); }, 850);
-    } else if (term) {
-      docsMessage.textContent = "Resultados inmediatos entre los cargados. Escribe 4 dígitos para buscar en el resto.";
-    } else {
-      docsMessage.textContent = hasMore ? "Puedes cargar más documentos." : "";
-    }
+    docSearch = documentInput.value.trim().slice(0, 40);
+    docsPage = 1;
+    renderDocs();
   });
   form.addEventListener("change", refreshChanged);
   comment.addEventListener("input", () => {
     charCount.textContent = numberFormat.format(comment.value.length);
     refreshChanged();
   });
-  loadMore.addEventListener("click", () => { void loadDocs(false); });
+  refreshDocsButton.addEventListener("click", () => {
+    clearTimeout(searchTimer);
+    void loadDocs(true);
+  });
 
   form.addEventListener("submit", async event => {
     event.preventDefault();
@@ -563,10 +568,9 @@
         savedSnapshot = null;
         setStatus("Registro " + code + " guardado. Hay cambios nuevos pendientes.", "success");
       }
-      // Invalidar también la búsqueda en caché. El SP excluye los DNI registrados.
-      clearTimeout(searchTimer);
-      resetDocs(selectedECC() ? "Actualizando documentos pendientes..." : "Selecciona una cabecera ECC para consultar sus documentos.");
-      if (selectedECC()) void loadDocs(true);
+      removeSavedDocument(bodyToSend.vNro_doc);
+      if (!documentInput.value.trim()) docSearch = "";
+      renderDocs();
     } catch (error) {
       // Un fallo de lectura NO prueba que el INSERT fallara. Nunca reintentar automáticamente.
       // Conservar idSolicitud para evitar duplicaciones si el usuario reintenta tras verificar.
@@ -600,3 +604,4 @@
     : "El listado se mostrará al conectar el catálogo externo.");
   void loadEcc();
 })();
+
