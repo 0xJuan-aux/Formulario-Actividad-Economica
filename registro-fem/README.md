@@ -131,3 +131,7 @@ Tras un guardado SQL confirmado, se retira el documento de todas las copias loca
 ### Compatibilidad con el flujo existente
 
 La prueba real de la precarga detectó que la respuesta no avanzaba con vDespues. Para no depender de ese mapeo, SP_COB_Registro_FEM_Consultar materializa los pendientes de la ECC una vez: conserva Table1 con la página/búsqueda anterior y añade Table2 con el catálogo completo, sin búsqueda/cursor/límite de página. El frontend prefiere Table2 y completa la descarga en una llamada; conserva el recorrido por cursor para respuestas antiguas o proxies sin Table2. La respuesta Power Automate debe conservar todo el cuerpo ResultSets. Seis pruebas Node aprobadas, incluida respuesta Table2 con cursor ignorado. El ajuste SQL mantiene los filtros y la exclusión de registrados; se despliega por ORQUESTADOR con postcondición, según ATD_BRAIN.
+
+### Contrato final de precarga en Table1
+
+La validación real no recibió la segunda tabla a través del flujo. El contrato final usa Table1: sin @vBuscar ni @vDespues, el SP entrega todo el catálogo pendiente de la ECC, con bCatalogoCompleto=true e iTotal_Documentos. El frontend exige que ese total coincida con todas las filas recibidas antes de habilitar la paginación local. Las consultas con búsqueda o cursor conservan @iLimite y marcan bCatalogoCompleto=false. El modo ECC no cambia. No se requiere cambiar Power Automate. La versión SQL anterior con Table2 queda superada por esta salida única. Siete pruebas Node correctas.

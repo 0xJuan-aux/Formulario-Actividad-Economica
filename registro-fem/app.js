@@ -295,7 +295,15 @@
     if (!response.ok || !Array.isArray(data?.ResultSets?.Table1)) throw new Error("CATALOGO_NO_DISPONIBLE");
     // El SP entrega Table2 completo para evitar depender del cursor del flujo.
     if (Array.isArray(data.ResultSets.Table2)) return { rows: data.ResultSets.Table2, complete: true };
-    return { rows: data.ResultSets.Table1, complete: false };
+    const rows = data.ResultSets.Table1;
+    const isComplete = row => [true, 1, "true", "1"].includes(row?.bCatalogoCompleto);
+    if (rows.length && rows.every(isComplete)) {
+      const expected = Number(rows[0].iTotal_Documentos);
+      if (!Number.isSafeInteger(expected) || expected !== rows.length ||
+          rows.some(row => Number(row.iTotal_Documentos) !== expected)) throw new Error("CATALOGO_INCOMPLETO");
+      return { rows, complete: true };
+    }
+    return { rows, complete: false };
   }
 
   async function loadDocs(forceRefresh = false) {
