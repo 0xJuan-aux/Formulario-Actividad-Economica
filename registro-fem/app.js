@@ -317,7 +317,7 @@
       if (page.length) displayDocs(page, !first);
       else if (first) documentEmpty(activeDocFilter
         ? "No se encontraron coincidencias con ese documento."
-        : "No se encontraron documentos para este ECC.");
+        : "No se encontraron documentos pendientes para este ECC.");
       docCount.textContent = numberFormat.format(docLoaded) +
         (hasMore ? "+ cargados" : " cargados");
       loadMore.hidden = !hasMore;
@@ -427,7 +427,7 @@
   }
 
   function prepareNextRegistration() {
-    // Solo tras confirmación SQL; conservar ECC y listado de documentos.
+    // Solo tras confirmación SQL; conservar ECC, limpiar selección y refrescar el catálogo.
     documentInput.value = "";
     docItems.querySelectorAll('input[name="documentChoice"]').forEach(radio => {
       radio.checked = false;
@@ -563,6 +563,10 @@
         savedSnapshot = null;
         setStatus("Registro " + code + " guardado. Hay cambios nuevos pendientes.", "success");
       }
+      // Invalidar también la búsqueda en caché. El SP excluye los DNI registrados.
+      clearTimeout(searchTimer);
+      resetDocs(selectedECC() ? "Actualizando documentos pendientes..." : "Selecciona una cabecera ECC para consultar sus documentos.");
+      if (selectedECC()) void loadDocs(true);
     } catch (error) {
       // Un fallo de lectura NO prueba que el INSERT fallara. Nunca reintentar automáticamente.
       // Conservar idSolicitud para evitar duplicaciones si el usuario reintenta tras verificar.
