@@ -1,5 +1,11 @@
 # Registro FEM externo — formulario público
 
+## Estado vigente — 24/11/2026
+
+Paginación local publicada y verificada. El propietario eligió descarga completa por ECC en cada navegador. La salida DOCUMENTOS de SP_COB_Registro_FEM_Consultar sin búsqueda/cursor devuelve Table1 completo con bCatalogoCompleto e iTotal_Documentos. La página verifica ese total y muestra páginas numeradas de 10 documentos; búsqueda y navegación locales. Copia en memoria de pestaña, reutilizable por ECC durante cinco minutos; Actualizar lista fuerza nueva consulta y recargar la página descarta la copia. Se conserva la exclusión de registrados y se retiran localmente tras guardar con confirmación SQL. No se crea almacenamiento público de DNI.
+
+Verificado en navegador con 352 documentos / 36 páginas, página 2, última página y búsqueda de un documento del final. Siete pruebas Node correctas. SQL final instalado con COMMIT confirmado: COB_FEM_BULK_R2_DDL_20261124_P7L3V8. Las notas siguientes conservan antecedentes; esta sección y «Contrato final de precarga en Table1» describen la versión vigente.
+
 Ruta: `/registro-fem/` en GitHub Pages. Página independiente del formulario principal Actividad Económica.
 
 ## Estado actual (18 de noviembre de 2026)
