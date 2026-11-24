@@ -285,7 +285,7 @@
   async function fetchDocumentBatch(eccValue, after, signal) {
     const requestBody = { vCodigo: "LISTA_DNI_FAME_COB", vModo: "DOCUMENTOS", vECC: eccValue, iLimite: downloadBatch };
     if (after) requestBody.vDespues = after;
-    if (!powerAutomateFlowUrl) return queryCatalog(requestBody, signal);
+    if (!powerAutomateFlowUrl) return { rows: await queryCatalog(requestBody, signal), complete: false };
     const response = await fetch(powerAutomateFlowUrl, {
       method: "POST", mode: "cors", credentials: "omit", cache: "no-store",
       headers: { "Content-Type": "application/json", "Accept": "application/json" },
@@ -293,7 +293,9 @@
     });
     const data = await response.json().catch(() => null);
     if (!response.ok || !Array.isArray(data?.ResultSets?.Table1)) throw new Error("CATALOGO_NO_DISPONIBLE");
-    return data.ResultSets.Table1;
+    // El SP entrega Table2 completo para evitar depender del cursor del flujo.
+    if (Array.isArray(data.ResultSets.Table2)) return { rows: data.ResultSets.Table2, complete: true };
+    return { rows: data.ResultSets.Table1, complete: false };
   }
 
   async function loadDocs(forceRefresh = false) {
@@ -322,7 +324,8 @@
     try {
       // Continuar hasta una página vacía: el flujo puede usar un lote menor que el solicitado.
       while (true) {
-        const rows = await fetchDocumentBatch(eccValue, after, signal);
+        const batch = await fetchDocumentBatch(eccValue, after, signal);
+        const rows = batch.rows;
         if (signal.aborted || version !== requestVersion || selectedECC() !== eccValue) return;
         if (!rows.length) break;
         const sizeBefore = downloaded.size;
@@ -331,6 +334,7 @@
           if (!number) throw new Error("DOCUMENTO_INVALIDO");
           downloaded.set(number, { vNro_doc: number, vCliente: documentClient(row) });
         }
+        if (batch.complete) break;
         const next = documentNumber(rows[rows.length - 1]);
         if (!next || cursors.has(next) || downloaded.size === sizeBefore) throw new Error("PAGINACION_SIN_AVANCE");
         cursors.add(next);

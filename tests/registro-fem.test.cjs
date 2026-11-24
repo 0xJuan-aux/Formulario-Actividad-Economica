@@ -30,7 +30,7 @@ class Element {
   querySelector(selector) { return this.querySelectorAll(selector)[0] || null; }
 }
 const settle = () => new Promise(resolve => setTimeout(resolve, 180));
-function setup({ repeatCursor = false, failOnce = false, delayA = false } = {}) {
+function setup({ repeatCursor = false, failOnce = false, delayA = false, completeCatalog = false } = {}) {
   const ids = [...fs.readFileSync('registro-fem/index.html', 'utf8').matchAll(/id="([^"]+)"/g)].map(x => x[1]);
   const nodes = Object.fromEntries(ids.map(id => [id, new Element(id === 'vECC' ? 'select' : 'div')]));
   const state = new Element('input'); state.name = 'vEstado_Afectacion'; state.value = 'Afectado'; nodes.femForm.appendChild(state);
@@ -46,7 +46,7 @@ function setup({ repeatCursor = false, failOnce = false, delayA = false } = {}) 
     if (failOnce) { failOnce = false; throw new Error('network'); }
     // Un flujo que entrega lotes de siete aunque el navegador solicite 500.
     const result = rows[body.vECC].filter(x => repeatCursor || !body.vDespues || x.vNro_doc > body.vDespues).slice(0, 7);
-    return { ok: true, json: async () => ({ ResultSets: { Table1: result } }) };
+    return { ok: true, json: async () => ({ ResultSets: completeCatalog ? { Table1: result, Table2: rows[body.vECC] } : { Table1: result } }) };
   };
   const context = { document, window: { REGISTRO_FEM_PUBLIC_CONFIG: { eccOnlyFlowUrl: 'https://test.environment.api.powerplatform.com/powerautomate/test/invoke?sig=fixture' }, crypto: webcrypto }, URL, Intl, AbortController, setTimeout, clearTimeout, console, fetch };
   vm.runInNewContext(fs.readFileSync('registro-fem/app.js', 'utf8'), context);
@@ -104,4 +104,15 @@ test('cambiar de ECC durante la descarga descarta la respuesta anterior', async 
   await app.choose('B'); await settle();
   assert.equal(app.nodes.docCount.textContent, '1 documento');
   assert.equal(app.radios()[0].value, '00000100');
+});
+
+
+test('usa el catálogo completo Table2 en una llamada aunque el flujo ignore el cursor', async () => {
+  const app = setup({ repeatCursor: true, completeCatalog: true }); await settle(); await app.choose('A');
+  assert.equal(app.nodes.docCount.textContent, '25 documentos');
+  assert.equal(app.docCalls().length, 1);
+  const calls = app.calls.length;
+  await app.nodes.docPagination.children.find(x => x.textContent === '3').fire('click');
+  assert.equal(app.radios().length, 5);
+  assert.equal(app.calls.length, calls);
 });
